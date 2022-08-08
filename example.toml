@@ -1,7 +1,8 @@
 manga = "日常"
 author = "あらゐけいいち"
 volume = 1
-chapter = "日常の1"
+chapter = 1
+title = "日常の1"
 
 [[pic]]
 nr = 2
@@ -16,7 +17,7 @@ characters = ["nano"]
   [[pic.text]]
   from = "nano"
   to = "hakase"
-  lines = ["朝食.は.自分.で", "作って.下さい"]
+  lines = ["朝食 は 自分 で!!", "作って 下さい!!"]
   kmap = [
     ["朝", "ちょう"],
     ["食", "しょく"],
@@ -28,7 +29,7 @@ characters = ["nano"]
   transl = ["Breakfast is on you.", "Please make it yourself!!"]
   [[pic.text]]
   from = "naration"
-  lines = ["東雲.なの", "ロボ.女子.高生"]
+  lines = ["東雲 なの", "ロボ 女子 高生"]
   kmap = [
     ["東", "しの"],
     ["雲", "のめ"],
@@ -41,7 +42,7 @@ characters = ["nano"]
 
 # - picture 2
 #   - text 1
-#     - すいません　<br/> はかせ
+#     - すいません <br/> はかせ
 #     - suimasen <br/> hakase
 #     - Sorry, hakasei
 #   - text 2
