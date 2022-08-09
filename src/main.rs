@@ -1,8 +1,10 @@
 use serde::Deserialize;
+use clap::Parser;
 
 use std::fs;
 use std::fmt::Write;
 use std::collections::HashMap;
+use std::io::Write as _;
 
 #[derive(Deserialize, Debug)]
 struct Chapter{
@@ -32,43 +34,81 @@ struct Text{
     transl: Vec<String>,
 }
 
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args{
+    #[clap(short, long, default_value = "file")]
+    outputmode: String,
+    #[clap(short, long)]
+    files: Vec<String>,
+}
+
 fn main() {
-    let contents = fs::read_to_string("example.toml").expect("oof");
-    let chapter = match toml::from_str::<Chapter>(&contents){
-        Ok(chapter) => chapter,
-        Err(error) => panic!("{} (error position is an estimation!)", error),
-    };
-    let md = write_transcription(chapter);
-    println!("{}", md);
+    let args = Args::parse();
+    for file in args.files{
+        let contents = match fs::read_to_string(&file){
+            Ok(contents) => contents,
+            Err(error) => {
+                println!("Could not read file: \"{}\".\n\tError: {}", file, error);
+                continue;
+            }
+        };
+        let chapter = match toml::from_str::<Chapter>(&contents){
+            Ok(chapter) => chapter,
+            Err(error) => panic!("{} (error position is an estimation!)", error),
+        };
+        let md = write_transcription(chapter);
+        if args.outputmode == "file"{
+            let outname = if file.contains(".toml"){
+                file.replace(".toml", ".md")
+            } else {
+                let mut string = file.clone();
+                string.push_str(".md");
+                string
+            };
+            let mut outfile = match fs::File::create(&outname){
+                Ok(outfile) => outfile,
+                Err(error) => {
+                    println!("Could not create file: \"{}\".\n\tError: {}", outname, error);
+                    continue;
+                }
+            };
+            if let Err(error) = write!(outfile, "{}", md){
+                println!("Could not write to file: \"{}\".\n\tError: {}", outname, error);
+            }
+        } else {
+            println!("{}", md);
+        }
+    }
 }
 
 fn write_transcription(chapter: Chapter) -> String{
     let mut md = String::new();
-    writeln!(md, "{}{}", header(1), &chapter.title);
-    writeln!(md, "Manga: {}", chapter.manga);
-    writeln!(md, "Author: {}", chapter.author);
-    writeln!(md, "Volume: {}", chapter.volume);
-    writeln!(md, "Chapter: {}", chapter.chapter);
+    let _ = writeln!(md, "{}{}", header(1), &chapter.title);
+    let _ = writeln!(md, "Manga: {}", chapter.manga);
+    let _ = writeln!(md, "Author: {}", chapter.author);
+    let _ = writeln!(md, "Volume: {}", chapter.volume);
+    let _ = writeln!(md, "Chapter: {}", chapter.chapter);
 
     let mut last_page = 0;
     for picture in chapter.pic{
         if picture.page > last_page{
-            writeln!(md, "{}Page: {}", header(5), picture.page);
+            let _ = writeln!(md, "{}Page: {}", header(5), picture.page);
             last_page = picture.page;
         }
-        writeln!(md, "{}picture {}", bullet(1), picture.nr);
+        let _ = writeln!(md, "{}picture {}", bullet(1), picture.nr);
 
         fn write_text(md: &mut String, ident: usize, text: &Text){
             fn write_lines(md: &mut String, lines: &[String], rep: &str) {
                 for line in lines{
-                    write!(md, "{} <br/> ", line.replace(" ", rep));
+                    let _ = write!(md, "{} <br/> ", line.replace(" ", rep));
                 }
                 for _ in 0..7 { md.pop(); }
             }
             // transcription
-            write!(md, "{}", bullet(ident + 1));
+            let _ = write!(md, "{}", bullet(ident + 1));
             write_lines(md, &text.lines, "");
-            writeln!(md);
+            let _ = writeln!(md);
             // kanji replacement
             let mut replacements = Vec::new();
             let mut map = HashMap::new();
@@ -89,28 +129,28 @@ fn write_transcription(chapter: Chapter) -> String{
                 }
                 replacements.push(replaced);
             }
-            write!(md, "{}", bullet(ident + 1));
+            let _ = write!(md, "{}", bullet(ident + 1));
             write_lines(md, &replacements, "");
-            writeln!(md);
+            let _ = writeln!(md);
             // romanize
             let mut romanizeds = Vec::new();
             for rep in &replacements{
                 romanizeds.push(romanize(rep));
             }
-            write!(md, "{}", bullet(ident + 1));
+            let _ = write!(md, "{}", bullet(ident + 1));
             write_lines(md, &romanizeds, " ");
-            writeln!(md);
+            let _ = writeln!(md);
             // translation
-            write!(md, "{}", bullet(ident + 1));
+            let _ = write!(md, "{}", bullet(ident + 1));
             write_lines(md, &text.transl, " ");
-            writeln!(md);
+            let _ = writeln!(md);
         }
 
         if picture.text.len() == 1{
             write_text(&mut md, 2, &picture.text[0]);
         } else {
             for (n, text) in picture.text.iter().enumerate(){
-                writeln!(md, "{}text {}", bullet(2), n);
+                let _ = writeln!(md, "{}text {}", bullet(2), n);
                 write_text(&mut md, 3, text);
             }
         }
