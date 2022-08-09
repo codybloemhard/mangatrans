@@ -100,6 +100,10 @@ fn write_transcription(chapter: Chapter) -> String{
             write!(md, "{}", bullet(ident + 1));
             write_lines(md, &romanizeds, " ");
             writeln!(md);
+            // translation
+            write!(md, "{}", bullet(ident + 1));
+            write_lines(md, &text.transl, " ");
+            writeln!(md);
         }
 
         if picture.text.len() == 1{
@@ -129,11 +133,13 @@ fn bullet(ident: usize) -> String{
 fn romanize(string: &str) -> String{
     let mut res = String::new();
     let chars: Vec<char> = string.chars().collect();
+    if chars.is_empty() { return res; }
     let lm1 = chars.len() - 1;
     let mut i = 0;
+    let mut prev = chars[0];
     let mut tsu = false;
 
-    fn push(res: &mut String, roman: &str, tsu: &mut bool){
+    fn push(res: &mut String, roman: &str, tsu: &mut bool, prev: &mut char){
         if *tsu{
             let next = roman.chars().next();
             if let Some(next) = next{
@@ -142,6 +148,7 @@ fn romanize(string: &str) -> String{
             *tsu = false;
         }
         res.push_str(roman);
+        if let Some(last) = roman.chars().last(){ *prev = last; }
     }
 
     while i < lm1{
@@ -149,13 +156,18 @@ fn romanize(string: &str) -> String{
         let b = chars[i + 1];
         let comb = format!("{}{}", a, b);
         match Hepburn::from(&comb){
-            Hepburn::Roman(roman) => { push(&mut res, &roman, &mut tsu); i += 2; continue; },
+            Hepburn::Roman(roman) => {
+                push(&mut res, &roman, &mut tsu, &mut prev);
+                i += 2;
+                continue;
+            },
             _ => {},
         }
         let a = a.to_string();
         match Hepburn::from(&a){
-            Hepburn::Roman(roman) => push(&mut res, &roman, &mut tsu),
+            Hepburn::Roman(roman) => push(&mut res, &roman, &mut tsu, &mut prev),
             Hepburn::SmallTsu => tsu = true,
+            Hepburn::Enlongate => res.push(prev),
             Hepburn::Fail => res.push_str(&a),
         }
         i += 1;
@@ -163,7 +175,7 @@ fn romanize(string: &str) -> String{
     if i == lm1{
         let last = chars[lm1].to_string();
         if let Hepburn::Roman(roman) = Hepburn::from(&last){
-            push(&mut res, &roman, &mut tsu);
+            push(&mut res, &roman, &mut tsu, &mut prev);
         } else {
             res.push_str(&last);
         }
@@ -171,7 +183,7 @@ fn romanize(string: &str) -> String{
     res
 }
 
-enum Hepburn{ Roman(String), SmallTsu, Fail }
+enum Hepburn{ Roman(String), SmallTsu, Enlongate, Fail }
 
 impl Hepburn{
     fn from(string: &str) -> Self{
@@ -226,13 +238,33 @@ impl Hepburn{
             "びょ" => "byo", "ビョ" => "byo",
             "ぴゃ" => "pya", "ピャ" => "pya", "ぴゅ" => "pyu", "ピュ" => "pyu",
             "ぴょ" => "pyo", "ピョ" => "pyo",
+            "〜" => "~",
             "っ" => "_", "ッ" => "_",
+            "ー" => "-",
             _ => "",
         }.to_string();
         match temp.as_str(){
             "" => Self::Fail,
             "_" => Self::SmallTsu,
+            "-" => Self::Enlongate,
             _ => Self::Roman(temp),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests{
+    use super::*;
+
+    #[test]
+    fn test_romanize(){
+        assert_eq!(
+            &romanize("ちょうしょく は じぶんで!! つくって ください!!"),
+            "choushoku ha jibunde!! tsukutte kudasai!!"
+        );
+        assert_eq!(
+            &romanize("いってキーまーす!!"),
+            "ittekiimaasu!!"
+        );
     }
 }
