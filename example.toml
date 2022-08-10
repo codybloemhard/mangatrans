@@ -39,19 +39,3 @@ characters = ["nano"]
     ["生", "せい"],
   ]
   transl = ["Shinonome Nano", "Robot highschool girl"]
-
-# - picture 2
-#   - text 1
-#     - すいません <br/> はかせ
-#     - suimasen <br/> hakase
-#     - Sorry, hakasei
-#   - text 2
-#     - 朝食は自分で <br/> 作って下さい!!
-#     - ちょう・しょく・は・じ・ぶんで!!　<br/> つく・って・くだ・さい!!
-#     - kyou shoku wa ji bunde!! <br/> tsukutte kudasai!!
-#     - Breakfast is on you. <br/> Please make it yourself!!
-#   - text 3
-#     - 東雲なの <br/> ロボ女子高生
-#     - しの・のめ・なの <br/> ロボ・じょ・し・こう・せい
-#     - shinonome nano <br/> robo joshi kousei
-#     - shinonome nano <br/> robot highschool girl

@@ -13,16 +13,16 @@ struct Chapter{
     volume: usize,
     chapter: usize,
     title: String,
-    pic: Vec<Picture>,
+    pic: Vec<Pic>,
 }
 
 #[derive(Deserialize, Debug)]
-struct Picture{
+struct Pic{
     nr: usize,
     page: usize,
-    characters: Vec<String>,
+    characters: Option<Vec<String>>,
     location: Option<String>,
-    text: Vec<Text>,
+    text: Option<Vec<Text>>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -31,13 +31,13 @@ struct Text{
     to: Option<String>,
     lines: Vec<String>,
     kmap: Option<Vec<[String; 2]>>,
-    transl: Vec<String>,
+    transl: Option<Vec<String>>,
 }
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args{
-    #[clap(short, long, default_value = "file")]
+    #[clap(short, long, default_value = "stdout")]
     outputmode: String,
     #[clap(short, long)]
     files: Vec<String>,
@@ -96,12 +96,12 @@ fn write_transcription(chapter: Chapter) -> String{
             let _ = writeln!(md, "{}Page: {}", header(5), picture.page);
             last_page = picture.page;
         }
-        let _ = writeln!(md, "{}picture {}", bullet(1), picture.nr);
+        let _ = writeln!(md, "{}picture {}", bullet(0), picture.nr);
 
         fn write_text(md: &mut String, ident: usize, text: &Text){
             fn write_lines(md: &mut String, lines: &[String], rep: &str) {
                 for line in lines{
-                    let _ = write!(md, "{} <br/> ", line.replace(" ", rep));
+                    let _ = write!(md, "{} <br/> ", line.replace(' ', rep));
                 }
                 for _ in 0..7 { md.pop(); }
             }
@@ -111,27 +111,29 @@ fn write_transcription(chapter: Chapter) -> String{
             let _ = writeln!(md);
             // kanji replacement
             let mut replacements = Vec::new();
-            let mut map = HashMap::new();
             if let Some(kmap) = &text.kmap{
+                let mut map = HashMap::new();
                 for [x, y] in kmap{
                     map.insert(x, y);
                 }
-            }
-            for line in &text.lines{
-                let mut replaced = String::new();
-                for c in line.chars(){
-                    let s = c.to_string();
-                    if let Some(replacement) = map.get(&s){
-                        replaced.push_str(replacement);
-                    } else {
-                        replaced.push_str(&s);
+                for line in &text.lines{
+                    let mut replaced = String::new();
+                    for c in line.chars(){
+                        let s = c.to_string();
+                        if let Some(replacement) = map.get(&s){
+                            replaced.push_str(replacement);
+                        } else {
+                            replaced.push_str(&s);
+                        }
                     }
+                    replacements.push(replaced);
                 }
-                replacements.push(replaced);
+                let _ = write!(md, "{}", bullet(ident + 1));
+                write_lines(md, &replacements, "");
+                let _ = writeln!(md);
+            } else {
+                replacements = text.lines.clone();
             }
-            let _ = write!(md, "{}", bullet(ident + 1));
-            write_lines(md, &replacements, "");
-            let _ = writeln!(md);
             // romanize
             let mut romanizeds = Vec::new();
             for rep in &replacements{
@@ -141,17 +143,20 @@ fn write_transcription(chapter: Chapter) -> String{
             write_lines(md, &romanizeds, " ");
             let _ = writeln!(md);
             // translation
-            let _ = write!(md, "{}", bullet(ident + 1));
-            write_lines(md, &text.transl, " ");
-            let _ = writeln!(md);
+            if let Some(transl) = &text.transl{
+                let _ = write!(md, "{}", bullet(ident + 1));
+                write_lines(md, transl, " ");
+                let _ = writeln!(md);
+            }
         }
 
-        if picture.text.len() == 1{
-            write_text(&mut md, 2, &picture.text[0]);
+        let text = if let Some(text) = picture.text{ text } else { continue; };
+        if text.len() == 1{
+            write_text(&mut md, 1, &text[0]);
         } else {
-            for (n, text) in picture.text.iter().enumerate(){
-                let _ = writeln!(md, "{}text {}", bullet(2), n);
-                write_text(&mut md, 3, text);
+            for (n, text) in text.iter().enumerate(){
+                let _ = writeln!(md, "{}text {}", bullet(2), n + 1);
+                write_text(&mut md, 2, text);
             }
         }
     }
@@ -159,13 +164,13 @@ fn write_transcription(chapter: Chapter) -> String{
 }
 
 fn header(rank: usize) -> String{
-    let mut temp = "#".repeat(rank).to_string();
-    temp.push_str(" ");
+    let mut temp = "#".repeat(rank);
+    temp.push(' ');
     temp
 }
 
 fn bullet(ident: usize) -> String{
-    let mut temp = "  ".repeat(ident).to_string();
+    let mut temp = "  ".repeat(ident);
     temp.push_str("- ");
     temp
 }
@@ -195,13 +200,10 @@ fn romanize(string: &str) -> String{
         let a = chars[i];
         let b = chars[i + 1];
         let comb = format!("{}{}", a, b);
-        match Hepburn::from(&comb){
-            Hepburn::Roman(roman) => {
-                push(&mut res, &roman, &mut tsu, &mut prev);
-                i += 2;
-                continue;
-            },
-            _ => {},
+        if let Hepburn::Roman(roman) = Hepburn::from(&comb){
+            push(&mut res, &roman, &mut tsu, &mut prev);
+            i += 2;
+            continue;
         }
         let a = a.to_string();
         match Hepburn::from(&a){
