@@ -45,6 +45,8 @@ struct Args{
 
 fn main() {
     let args = Args::parse();
+    let mut log = String::new();
+    let mut md = String::new();
     for file in args.files{
         let contents = match fs::read_to_string(&file){
             Ok(contents) => contents,
@@ -57,7 +59,7 @@ fn main() {
             Ok(chapter) => chapter,
             Err(error) => panic!("{} (error position is an estimation!)", error),
         };
-        let md = write_transcription(chapter);
+        write_transcription(chapter, &mut md, &mut log);
         if args.outputmode == "file"{
             let outname = if file.contains(".toml"){
                 file.replace(".toml", ".md")
@@ -80,10 +82,10 @@ fn main() {
             println!("{}", md);
         }
     }
+    println!("{}", log);
 }
 
-fn write_transcription(chapter: Chapter) -> String{
-    let mut md = String::new();
+fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
     let _ = writeln!(md, "{}{}", header(1), &chapter.title);
     let _ = writeln!(md, "Manga: {}", chapter.manga);
     let _ = writeln!(md, "Author: {}", chapter.author);
@@ -98,7 +100,7 @@ fn write_transcription(chapter: Chapter) -> String{
         }
         let _ = writeln!(md, "{}picture {}", bullet(0), picture.nr);
 
-        fn write_text(md: &mut String, ident: usize, text: &Text){
+        fn write_text(md: &mut String, log: &mut String, ident: usize, text: &Text){
             fn write_lines(md: &mut String, lines: &[String], rep: &str) {
                 for line in lines{
                     let _ = write!(md, "{} <br/> ", line.replace(' ', rep));
@@ -114,18 +116,10 @@ fn write_transcription(chapter: Chapter) -> String{
             if let Some(kmap) = &text.kmap{
                 let mut map = HashMap::new();
                 for [x, y] in kmap{
-                    map.insert(x, y);
+                    map.insert(x.to_string(), y.to_string());
                 }
                 for line in &text.lines{
-                    let mut replaced = String::new();
-                    for c in line.chars(){
-                        let s = c.to_string();
-                        if let Some(replacement) = map.get(&s){
-                            replaced.push_str(replacement);
-                        } else {
-                            replaced.push_str(&s);
-                        }
-                    }
+                    let replaced = map_kanjis(line, &map);
                     replacements.push(replaced);
                 }
                 let _ = write!(md, "{}", bullet(ident + 1));
@@ -135,13 +129,21 @@ fn write_transcription(chapter: Chapter) -> String{
                 replacements = text.lines.clone();
             }
             // romanize
-            let mut romanizeds = Vec::new();
-            for rep in &replacements{
-                romanizeds.push(romanize(rep));
+            if could_contain_kanji(&replacements){
+                let _ = writeln!(
+                    log,
+                    "Warning: lines {:#?} contain kanji or untranslateable characters.",
+                    replacements
+                );
+            } else {
+                let mut romanizeds = Vec::new();
+                for rep in &replacements{
+                    romanizeds.push(romanize(rep));
+                }
+                let _ = write!(md, "{}", bullet(ident + 1));
+                write_lines(md, &romanizeds, " ");
+                let _ = writeln!(md);
             }
-            let _ = write!(md, "{}", bullet(ident + 1));
-            write_lines(md, &romanizeds, " ");
-            let _ = writeln!(md);
             // translation
             if let Some(transl) = &text.transl{
                 let _ = write!(md, "{}", bullet(ident + 1));
@@ -152,15 +154,14 @@ fn write_transcription(chapter: Chapter) -> String{
 
         let text = if let Some(text) = picture.text{ text } else { continue; };
         if text.len() == 1{
-            write_text(&mut md, 1, &text[0]);
+            write_text(md, log, 1, &text[0]);
         } else {
             for (n, text) in text.iter().enumerate(){
                 let _ = writeln!(md, "{}text {}", bullet(2), n + 1);
-                write_text(&mut md, 2, text);
+                write_text(md, log, 2, text);
             }
         }
     }
-    md
 }
 
 fn header(rank: usize) -> String{
@@ -292,6 +293,48 @@ impl Hepburn{
             _ => Self::Roman(temp),
         }
     }
+}
+
+fn map_kanjis(string: &str, map: &HashMap<String, String>) -> String{
+    let mut replaced = String::new();
+    for c in string.chars(){
+        let s = c.to_string();
+        if let Some(replacement) = map.get(&s){
+            replaced.push_str(replacement);
+        } else {
+            replaced.push_str(&s);
+        }
+    }
+    replaced
+}
+
+fn could_contain_kanji(strings: &[String]) -> bool{
+    for string in strings{
+        for c in string.chars(){
+            if could_be_kanji(c) { return true; }
+        }
+    }
+    false
+}
+
+fn could_be_kanji(c: char) -> bool{
+    !is_latin(c) && !is_hiragana(c) && !is_katakana(c)
+}
+
+fn is_latin(c: char) -> bool{
+    "qgmlwyfubdstnriaeohzxcvjkpQGMLWYFUBDSTNRIAEOHZXCVJKP0123456789
+        -_=+`~,./<>?\\|[]{}!@#$%^&*() "
+        .contains(c)
+}
+
+fn is_hiragana(c: char) -> bool{
+    "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろ
+    わをんがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽゐゃゅょっ〜ー".contains(c)
+}
+
+fn is_katakana(c: char) -> bool{
+    "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロ
+    ワヲンガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポャュョッ〜ー".contains(c)
 }
 
 #[cfg(test)]
