@@ -217,7 +217,9 @@ fn romanize(string: &str) -> String{
     }
     if i == lm1{
         let last = chars[lm1].to_string();
-        if let Hepburn::Roman(roman) = Hepburn::from(&last){
+        if last == "っ"{
+            res.push('h');
+        } else if let Hepburn::Roman(roman) = Hepburn::from(&last){
             push(&mut res, &roman, &mut tsu, &mut prev);
         } else {
             res.push_str(&last);
@@ -281,7 +283,7 @@ impl Hepburn{
             "びょ" => "byo", "ビョ" => "byo",
             "ぴゃ" => "pya", "ピャ" => "pya", "ぴゅ" => "pyu", "ピュ" => "pyu",
             "ぴょ" => "pyo", "ピョ" => "pyo",
-            "〜" => "~",
+            "〜" => "~", "？" => "?", "！" => "!",
             "っ" => "_", "ッ" => "_",
             "ー" => "-",
             _ => "",
@@ -318,23 +320,25 @@ fn could_contain_kanji(strings: &[String]) -> bool{
 }
 
 fn could_be_kanji(c: char) -> bool{
-    !is_latin(c) && !is_hiragana(c) && !is_katakana(c)
+    !is_latin(c) && !is_hiragana(c) && !is_katakana(c) && !is_punctuation(c)
 }
 
 fn is_latin(c: char) -> bool{
-    "qgmlwyfubdstnriaeohzxcvjkpQGMLWYFUBDSTNRIAEOHZXCVJKP0123456789
-        -_=+`~,./<>?\\|[]{}!@#$%^&*() "
-        .contains(c)
+    "qgmlwyfubdstnriaeohzxcvjkpQGMLWYFUBDSTNRIAEOHZXCVJKP0123456789".contains(c)
 }
 
 fn is_hiragana(c: char) -> bool{
     "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろ
-    わをんがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽゐゃゅょっ〜ー".contains(c)
+    わをんがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽゐゃゅょっ".contains(c)
 }
 
 fn is_katakana(c: char) -> bool{
     "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロ
-    ワヲンガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポャュョッ〜ー".contains(c)
+    ワヲンガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポャュョッ".contains(c)
+}
+
+fn is_punctuation(c: char) -> bool{
+    "-_=+`~,./<>?\\|[]{}!@#$%^&*() 〜ー！？".contains(c)
 }
 
 #[cfg(test)]
