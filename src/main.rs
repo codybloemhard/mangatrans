@@ -112,22 +112,15 @@ fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
             write_lines(md, &text.lines, "");
             let _ = writeln!(md);
             // kanji replacement
-            let mut replacements = Vec::new();
-            if let Some(kmap) = &text.kmap{
-                let mut map = HashMap::new();
-                for [x, y] in kmap{
-                    map.insert(x.to_string(), y.to_string());
-                }
-                for line in &text.lines{
-                    let replaced = map_kanjis(line, &map);
-                    replacements.push(replaced);
-                }
+            let replacements = if let Some(kmap) = &text.kmap{
+                let rs = map_kanjis(&text.lines, kmap.as_slice());
                 let _ = write!(md, "{}", bullet(ident + 1));
-                write_lines(md, &replacements, "");
+                write_lines(md, &rs, "");
                 let _ = writeln!(md);
+                rs
             } else {
-                replacements = text.lines.clone();
-            }
+                text.lines.clone()
+            };
             // romanize
             if could_contain_kanji(&replacements){
                 let _ = writeln!(
@@ -297,17 +290,18 @@ impl Hepburn{
     }
 }
 
-fn map_kanjis(string: &str, map: &HashMap<String, String>) -> String{
-    let mut replaced = String::new();
-    for c in string.chars(){
-        let s = c.to_string();
-        if let Some(replacement) = map.get(&s){
-            replaced.push_str(replacement);
-        } else {
-            replaced.push_str(&s);
+fn map_kanjis(strings: &[String], subs: &[[String; 2]]) -> Vec<String>{
+    let mut replaceds = strings.to_vec();
+    for [replacee, replacant] in subs{
+        for (i, string) in replaceds.iter().enumerate(){
+            let new = string.replacen(replacee, replacant, 1);
+            if &new != string {
+                replaceds[i] = new;
+                break;
+            }
         }
     }
-    replaced
+    replaceds
 }
 
 fn could_contain_kanji(strings: &[String]) -> bool{
@@ -354,6 +348,102 @@ mod tests{
         assert_eq!(
             &romanize("いってキーまーす!!"),
             "ittekiimaasu!!"
+        );
+    }
+
+    #[test]
+    fn test_map_kanjis(){
+        // normal one of each
+        let map = vec!
+            [
+                ("今", "きょ"), ("日", "う"), ("雨", "あめ"), ("降", "ふ"),
+                ("作", "つく"), ("下", "くだ")
+            ]
+            .into_iter().map(|(a, b)| [a.to_string(), b.to_string()]).collect::<Vec<_>>();
+        assert_eq!(
+            map_kanjis(&[
+                "今日雨降るって".to_string(),
+                "作って 下さい!!".to_string()
+            ], &map),
+            vec![
+                "きょうあめふるって".to_string(),
+                "つくって ください!!".to_string()
+            ]
+        );
+        // more than kanji mapping in one map entry
+        let map = vec!
+            [
+                ("今日", "きょう"), ("雨", "あめ"), ("降", "ふ"), ("作", "つく"), ("下", "くだ")
+            ]
+            .into_iter().map(|(a, b)| [a.to_string(), b.to_string()]).collect::<Vec<_>>();
+        assert_eq!(
+            map_kanjis(&[
+                "今日雨降るって".to_string(),
+                "作って 下さい!!".to_string()
+            ], &map),
+            vec![
+                "きょうあめふるって".to_string(),
+                "つくって ください!!".to_string()
+            ]
+        );
+        // two of the same in one line
+        let map = vec!
+            [
+                ("考", "かんが"), ("不", "ふ"), ("幸", "こう"), ("中", "ちゅ"), ("幸", "さいわ"),
+            ]
+            .into_iter().map(|(a, b)| [a.to_string(), b.to_string()]).collect::<Vec<_>>();
+        assert_eq!(
+            map_kanjis(&[
+                "そう考えると".to_string(),
+                "不幸中の幸いって".to_string(),
+                "ヤツだね".to_string()
+            ], &map),
+            vec![
+                "そうかんがえると".to_string(),
+                "ふこうちゅのさいわいって".to_string(),
+                "ヤツだね".to_string()
+            ]
+        );
+        // two of the same in two lines
+        let map = vec!
+            [
+                ("考", "かんが"), ("不", "ふ"), ("幸", "こう"), ("中", "ちゅ"), ("幸", "さいわ"),
+            ]
+            .into_iter().map(|(a, b)| [a.to_string(), b.to_string()]).collect::<Vec<_>>();
+        assert_eq!(
+            map_kanjis(&[
+                "そう考えると".to_string(),
+                "不幸中の".to_string(),
+                "幸いって".to_string(),
+                "ヤツだね".to_string()
+            ], &map),
+            vec![
+                "そうかんがえると".to_string(),
+                "ふこうちゅの".to_string(),
+                "さいわいって".to_string(),
+                "ヤツだね".to_string()
+            ]
+        );
+        // all of it
+        let map = vec!
+            [
+                ("今日", "きょう"), ("考", "かんが"), ("不", "ふ"),
+                ("幸", "こう"), ("中", "ちゅ"), ("幸", "さいわ"), ("幸", "justatest")
+            ]
+            .into_iter().map(|(a, b)| [a.to_string(), b.to_string()]).collect::<Vec<_>>();
+        assert_eq!(
+            map_kanjis(&[
+                "今日考".to_string(),
+                "不".to_string(),
+                "幸幸中".to_string(),
+                "幸".to_string()
+            ], &map),
+            vec![
+                "きょうかんが".to_string(),
+                "ふ".to_string(),
+                "こうさいわちゅ".to_string(),
+                "justatest".to_string()
+            ]
         );
     }
 }
