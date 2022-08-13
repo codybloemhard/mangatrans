@@ -3,7 +3,6 @@ use clap::Parser;
 
 use std::fs;
 use std::fmt::Write;
-use std::collections::HashMap;
 use std::io::Write as _;
 
 #[derive(Deserialize, Debug)]
@@ -94,28 +93,28 @@ fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
 
     let mut last_page = 0;
     for picture in chapter.pic{
-        if picture.page > last_page{
-            let _ = writeln!(md, "{}Page: {}", header(5), picture.page);
-            last_page = picture.page;
-        }
-        let _ = writeln!(md, "{}picture {}", bullet(0), picture.nr);
-
         fn write_text(md: &mut String, log: &mut String, ident: usize, text: &Text){
-            fn write_lines(md: &mut String, lines: &[String], rep: &str) {
+            fn write_lines(md: &mut String, lines: &[String], reps: &[(&str, &str)]) {
                 for line in lines{
-                    let _ = write!(md, "{} <br/> ", line.replace(' ', rep));
+                    let mut newline = line.clone();
+                    for (replacee, replacant) in reps{
+                        newline = newline.replace(replacee, replacant);
+                    }
+                    let _ = write!(md, "{} <br/> ", newline);
                 }
                 for _ in 0..7 { md.pop(); }
             }
             // transcription
             let _ = write!(md, "{}", bullet(ident + 1));
-            write_lines(md, &text.lines, "");
+            write_lines(md, &text.lines, &[
+                (" ", ""), ("-", "ー"), ("~", "〜"), ("!", "！"), ("?", "？")
+            ]);
             let _ = writeln!(md);
             // kanji replacement
             let replacements = if let Some(kmap) = &text.kmap{
                 let rs = map_kanjis(&text.lines, kmap.as_slice());
                 let _ = write!(md, "{}", bullet(ident + 1));
-                write_lines(md, &rs, "");
+                write_lines(md, &rs, &[(" ", "")]);
                 let _ = writeln!(md);
                 rs
             } else {
@@ -134,18 +133,27 @@ fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
                     romanizeds.push(romanize(rep));
                 }
                 let _ = write!(md, "{}", bullet(ident + 1));
-                write_lines(md, &romanizeds, " ");
+                write_lines(md, &romanizeds, &[
+                    ("　", " "), ("ー", "-"), ("〜", "~"), ("！", "!"), ("？", "?")
+                ]);
                 let _ = writeln!(md);
             }
             // translation
             if let Some(transl) = &text.transl{
                 let _ = write!(md, "{}", bullet(ident + 1));
-                write_lines(md, transl, " ");
+                write_lines(md, transl, &[]);
                 let _ = writeln!(md);
             }
         }
 
         let text = if let Some(text) = picture.text{ text } else { continue; };
+
+        if picture.page > last_page{
+            let _ = writeln!(md, "{}Page: {}", header(5), picture.page);
+            last_page = picture.page;
+        }
+        let _ = writeln!(md, "{}picture {}", bullet(0), picture.nr);
+
         if text.len() == 1{
             write_text(md, log, 1, &text[0]);
         } else {
@@ -276,7 +284,7 @@ impl Hepburn{
             "びょ" => "byo", "ビョ" => "byo",
             "ぴゃ" => "pya", "ピャ" => "pya", "ぴゅ" => "pyu", "ピュ" => "pyu",
             "ぴょ" => "pyo", "ピョ" => "pyo",
-            "〜" => "~", "？" => "?", "！" => "!",
+            "〜" => "~", "？" => "?", "！" => "!", "　" => " ",
             "っ" => "_", "ッ" => "_",
             "ー" => "-",
             _ => "",
@@ -332,7 +340,7 @@ fn is_katakana(c: char) -> bool{
 }
 
 fn is_punctuation(c: char) -> bool{
-    "-_=+`~,./<>?\\|[]{}!@#$%^&*() 〜ー！？".contains(c)
+    "-_=+`~,./<>?\\|[]{}!@#$%^&*() 　〜ー！？".contains(c)
 }
 
 #[cfg(test)]
