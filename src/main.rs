@@ -11,6 +11,7 @@ struct Chapter{
     author: String,
     volume: usize,
     chapter: usize,
+    subchapter: Option<f32>,
     title: String,
     pic: Vec<Pic>,
 }
@@ -36,21 +37,26 @@ struct Text{
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args{
-    #[clap(short, long, default_value = "stdout")]
-    outputmode: String,
-    #[clap(short, long)]
-    files: Vec<String>,
+    #[clap(short='o', long, value_enum, default_value_t=OutputMode::default())]
+    outputmode: OutputMode,
+    #[clap(short='d', long, value_parser)]
+    outputdir: Option<std::path::PathBuf>,
+    #[clap(short, long, value_parser)]
+    inputfiles: Vec<std::path::PathBuf>,
 }
+
+#[derive(Debug, Default, Clone, PartialEq, clap::ValueEnum)]
+enum OutputMode { #[default] Stdout, File }
 
 fn main() {
     let args = Args::parse();
     let mut log = String::new();
     let mut md = String::new();
-    for file in args.files{
+    for mut file in args.inputfiles{
         let contents = match fs::read_to_string(&file){
             Ok(contents) => contents,
             Err(error) => {
-                println!("Could not read file: \"{}\".\n\tError: {}", file, error);
+                println!("Could not read file: \"{}\".\n\tError: {}", file.display(), error);
                 continue;
             }
         };
@@ -59,23 +65,23 @@ fn main() {
             Err(error) => panic!("{} (error position is an estimation!)", error),
         };
         write_transcription(chapter, &mut md, &mut log);
-        if args.outputmode == "file"{
-            let outname = if file.contains(".toml"){
-                file.replace(".toml", ".md")
-            } else {
-                let mut string = file.clone();
-                string.push_str(".md");
-                string
-            };
-            let mut outfile = match fs::File::create(&outname){
+        if args.outputmode == OutputMode::File{
+            if let Some(outdir) = &args.outputdir{
+                let filename = file.file_name().expect("rip").to_os_string();
+                file.clear();
+                file.push(outdir);
+                file.push(filename);
+            }
+            file.set_extension("md");
+            let mut outfile = match fs::File::create(&file){
                 Ok(outfile) => outfile,
                 Err(error) => {
-                    println!("Could not create file: \"{}\".\n\tError: {}", outname, error);
+                    println!("Could not create file: \"{}\".\n\tError: {}", file.display(), error);
                     continue;
                 }
             };
             if let Err(error) = write!(outfile, "{}", md){
-                println!("Could not write to file: \"{}\".\n\tError: {}", outname, error);
+                println!("Could not write to file: \"{}\".\n\tError: {}", file.display(), error);
             }
         } else {
             println!("{}", md);
@@ -90,6 +96,9 @@ fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
     let _ = writeln!(md, "Author: {}", chapter.author);
     let _ = writeln!(md, "Volume: {}", chapter.volume);
     let _ = writeln!(md, "Chapter: {}", chapter.chapter);
+    if let Some(subchap) = chapter.subchapter{
+        let _ = writeln!(md, "Sub Chapter: {}", subchap);
+    }
 
     let mut last_page = 0;
     for picture in chapter.pic{
@@ -158,8 +167,8 @@ fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
             write_text(md, log, 1, &text[0]);
         } else {
             for (n, text) in text.iter().enumerate(){
-                let _ = writeln!(md, "{}text {}", bullet(2), n + 1);
-                write_text(md, log, 2, text);
+                let _ = writeln!(md, "{}text {}", bullet(1), n + 1);
+                write_text(md, log, 1, text);
             }
         }
     }
@@ -340,7 +349,7 @@ fn is_katakana(c: char) -> bool{
 }
 
 fn is_punctuation(c: char) -> bool{
-    "-_=+`~,./<>?\\|[]{}!@#$%^&*() 　〜ー！？".contains(c)
+    "-_=+`~,./<>?\\|[]{}!@#$%^&*() 　〜ー！？・".contains(c)
 }
 
 #[cfg(test)]
