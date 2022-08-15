@@ -5,6 +5,7 @@ use std::fs;
 use std::fmt::Write;
 use std::io::Write as _;
 use std::path::PathBuf;
+use std::collections::HashMap;
 
 #[derive(Deserialize, Debug)]
 struct Chapter{
@@ -38,6 +39,8 @@ struct Text{
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args{
+    #[clap(short='m', long, value_enum, default_value_t=Mode::default())]
+    mode: Mode,
     #[clap(short='o', long, value_enum, default_value_t=OutputMode::default())]
     outputmode: OutputMode,
     #[clap(short='l', long, default_value_t=true)]
@@ -49,12 +52,21 @@ struct Args{
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, clap::ValueEnum)]
+enum Mode { #[default] Transcribe, Stats }
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, clap::ValueEnum)]
 enum OutputMode { #[default] Stdout, File }
 
 fn main() {
     let args = Args::parse();
+    if args.inputfiles.is_empty(){
+        println!("No input files received!");
+        return;
+    }
     let mut log = String::new();
-    let mut md = String::new();
+    let mut doc = String::new();
+    let mut stats = Stats::default();
+    let mut fileroot = args.inputfiles[0].clone();
     for file in args.inputfiles{
         let contents = match fs::read_to_string(&file){
             Ok(contents) => contents,
@@ -67,12 +79,103 @@ fn main() {
             Ok(chapter) => chapter,
             Err(error) => panic!("{} (error position is an estimation!)", error),
         };
-        md.clear();
-        write_transcription(chapter, &mut md, &mut log);
-        write_output(args.outputmode, &args.outputdir, file, &md);
+        if args.mode == Mode::Transcribe{
+            doc.clear();
+            write_transcription(chapter, &mut doc, &mut log);
+            write_output(args.outputmode, &args.outputdir, file, &doc);
+        } else {
+            accumulate_stats(chapter, &mut stats, &mut log);
+        }
+    }
+    if args.mode == Mode::Stats{
+        fileroot.set_file_name("stats");
+        stats_report(stats, &mut doc);
+        write_output(args.outputmode, &args.outputdir, fileroot, &doc);
     }
     if args.log {
         println!("{}", log);
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+struct Stats{
+    manga: String,
+    volumes: Vec<usize>,
+    chapters: Vec<usize>,
+    pictures: usize,
+    morae: usize,
+    locations: HashMap<String, (usize, usize)>,
+}
+
+fn stats_report(s: Stats, doc: &mut String){
+    let _ = writeln!(doc, "Manga: {}", s.manga);
+    let _ = write!(doc, "Volumes: ");
+    for vol in s.volumes{
+        let _ = write!(doc, "{}, ", vol);
+    }
+    doc.pop();
+    doc.pop();
+    let _ = writeln!(doc);
+    let _ = write!(doc, "Chapters: ");
+    for chap in s.chapters{
+        let _ = write!(doc, "{}, ", chap);
+    }
+    doc.pop();
+    doc.pop();
+    let _ = writeln!(doc);
+    let _ = writeln!(doc, "Pictures: {}", s.pictures);
+    let _ = writeln!(doc, "Morae spoken: {}", s.morae);
+    let _ = writeln!(doc, "Locations: ");
+    let mut locs = s.locations.into_iter().collect::<Vec<_>>();
+    locs.sort_unstable_by(|(_, a), (_, b)| b.partial_cmp(a).unwrap());
+    for (name, (count, morae)) in locs{
+        let _ = writeln!(doc, "\t{}: {} appearances, {} morae spoken in.", name, count, morae);
+    }
+}
+
+fn accumulate_stats(chapter: Chapter, stats: &mut Stats, log: &mut String){
+    fn update<T: Copy>(map: &mut HashMap<String, T>, key: &str, val: T, fun: fn(T, T) -> T){
+        if let Some(x) = map.get_mut(key){
+            *x = fun(*x, val);
+        } else {
+            map.insert(key.to_string(), val);
+        }
+    }
+
+    if stats.manga.is_empty(){
+        stats.manga = chapter.manga;
+    } else {
+        let _ = writeln!(log, "Different manga found: {}. Current manga is: {}.",
+                         chapter.manga, stats.manga);
+    }
+    stats.volumes.push(chapter.volume);
+    stats.chapters.push(chapter.chapter);
+    for picture in chapter.pic{
+        stats.pictures += 1;
+        let location = picture.location.unwrap_or_default();
+        let mut pic_morae = 0;
+        if let Some(texts) = picture.text{
+            for text in texts{
+                let replacements = if let Some(kmap) = &text.kmap{
+                    map_kanjis(&text.lines, kmap.as_slice())
+                } else {
+                    text.lines.clone()
+                };
+                if could_contain_kanji(&replacements){
+                    let _ = writeln!(
+                        log,
+                        "Warning: lines {:#?} contain kanji or untranslateable characters.
+                        Every kanji is counted as one (1) mora.",
+                        replacements
+                    );
+                }
+                let morae = replacements.iter().flat_map(|line| line.chars())
+                    .fold(0, |acc, c| acc + to_mora(c));
+                stats.morae += morae;
+                pic_morae += morae;
+            }
+        };
+        update(&mut stats.locations, &location, (1, pic_morae), |(a, b), (c, d)| (a + c, b + d));
     }
 }
 
@@ -342,7 +445,7 @@ fn could_contain_kanji(strings: &[String]) -> bool{
 }
 
 fn could_be_kanji(c: char) -> bool{
-    !is_latin(c) && !is_hiragana(c) && !is_katakana(c) && !is_punctuation(c)
+    !is_latin(c) && !is_hiragana(c) && !is_katakana(c) && !is_punctuation(c) && !is_whitespace(c)
 }
 
 fn is_latin(c: char) -> bool{
@@ -360,7 +463,18 @@ fn is_katakana(c: char) -> bool{
 }
 
 fn is_punctuation(c: char) -> bool{
-    "-_=+`~,./<>?\\|[]{}!@#$%^&*() 　〜ー！？・「」、。".contains(c)
+    "-_=+`~,./<>?\\|[]{}!@#$%^&*()〜ー！？・「」、。".contains(c)
+}
+
+fn is_whitespace(c: char) -> bool{
+    " 　\t\n".contains(c)
+}
+
+fn to_mora(c: char) -> usize{
+    if "ゃゅょャュョ 　〜！？・「」、。-_=+`~,./<>?\\|[]{}!@#$%^&*(\"'".contains(c) { return 0; }
+    if is_latin(c) { return 0; }
+    if is_whitespace(c) { return 0; }
+    1
 }
 
 #[cfg(test)]
@@ -473,5 +587,14 @@ mod tests{
                 "justatest".to_string()
             ]
         );
+    }
+
+    #[test]
+    fn to_mora_test(){
+        fn morae(string: &str) -> usize{
+            string.chars().fold(0, |a, c| a + to_mora(c))
+        }
+        assert_eq!(morae("きょう"), 2);
+        assert_eq!(morae("  いってキーまーす！"), 8);
     }
 }
