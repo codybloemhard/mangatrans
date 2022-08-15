@@ -4,6 +4,7 @@ use clap::Parser;
 use std::fs;
 use std::fmt::Write;
 use std::io::Write as _;
+use std::path::PathBuf;
 
 #[derive(Deserialize, Debug)]
 struct Chapter{
@@ -39,20 +40,22 @@ struct Text{
 struct Args{
     #[clap(short='o', long, value_enum, default_value_t=OutputMode::default())]
     outputmode: OutputMode,
+    #[clap(short='l', long, default_value_t=true)]
+    log: bool,
     #[clap(short='d', long, value_parser)]
-    outputdir: Option<std::path::PathBuf>,
+    outputdir: Option<PathBuf>,
     #[clap(short, long, value_parser)]
-    inputfiles: Vec<std::path::PathBuf>,
+    inputfiles: Vec<PathBuf>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, clap::ValueEnum)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, clap::ValueEnum)]
 enum OutputMode { #[default] Stdout, File }
 
 fn main() {
     let args = Args::parse();
     let mut log = String::new();
     let mut md = String::new();
-    for mut file in args.inputfiles{
+    for file in args.inputfiles{
         let contents = match fs::read_to_string(&file){
             Ok(contents) => contents,
             Err(error) => {
@@ -64,30 +67,37 @@ fn main() {
             Ok(chapter) => chapter,
             Err(error) => panic!("{} (error position is an estimation!)", error),
         };
+        md.clear();
         write_transcription(chapter, &mut md, &mut log);
-        if args.outputmode == OutputMode::File{
-            if let Some(outdir) = &args.outputdir{
-                let filename = file.file_name().expect("rip").to_os_string();
-                file.clear();
-                file.push(outdir);
-                file.push(filename);
-            }
-            file.set_extension("md");
-            let mut outfile = match fs::File::create(&file){
-                Ok(outfile) => outfile,
-                Err(error) => {
-                    println!("Could not create file: \"{}\".\n\tError: {}", file.display(), error);
-                    continue;
-                }
-            };
-            if let Err(error) = write!(outfile, "{}", md){
-                println!("Could not write to file: \"{}\".\n\tError: {}", file.display(), error);
-            }
-        } else {
-            println!("{}", md);
-        }
+        write_output(args.outputmode, &args.outputdir, file, &md);
     }
-    println!("{}", log);
+    if args.log {
+        println!("{}", log);
+    }
+}
+
+fn write_output(outputmode: OutputMode, outputdir: &Option<PathBuf>, mut file: PathBuf, doc: &str){
+    if outputmode == OutputMode::File{
+        if let Some(outdir) = outputdir{
+            let filename = file.file_name().expect("rip").to_os_string();
+            file.clear();
+            file.push(outdir);
+            file.push(filename);
+        }
+        file.set_extension("md");
+        let mut outfile = match fs::File::create(&file){
+            Ok(outfile) => outfile,
+            Err(error) => {
+                println!("Could not create file: \"{}\".\n\tError: {}", file.display(), error);
+                return;
+            }
+        };
+        if let Err(error) = write!(outfile, "{}", doc){
+            println!("Could not write to file: \"{}\".\n\tError: {}", file.display(), error);
+        }
+    } else {
+        println!("{}", doc);
+    }
 }
 
 fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
@@ -293,7 +303,8 @@ impl Hepburn{
             "びょ" => "byo", "ビョ" => "byo",
             "ぴゃ" => "pya", "ピャ" => "pya", "ぴゅ" => "pyu", "ピュ" => "pyu",
             "ぴょ" => "pyo", "ピョ" => "pyo",
-            "〜" => "~", "？" => "?", "！" => "!", "　" => " ",
+            "〜" => "~", "？" => "?", "！" => "!", "　" => " ", "「" => "\"", "」" => "\"",
+            "。" => ".", "、" => ",",
             "っ" => "_", "ッ" => "_",
             "ー" => "-",
             _ => "",
@@ -349,7 +360,7 @@ fn is_katakana(c: char) -> bool{
 }
 
 fn is_punctuation(c: char) -> bool{
-    "-_=+`~,./<>?\\|[]{}!@#$%^&*() 　〜ー！？・".contains(c)
+    "-_=+`~,./<>?\\|[]{}!@#$%^&*() 　〜ー！？・「」、。".contains(c)
 }
 
 #[cfg(test)]
