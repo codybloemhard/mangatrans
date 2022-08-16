@@ -1,11 +1,14 @@
 mod structure;
 mod japanese;
-mod stats;
 mod transcribe;
+mod language;
+mod stats;
+mod report;
 
 use structure::*;
-use stats::*;
 use transcribe::*;
+use language::*;
+use stats::*;
 
 use clap::Parser;
 
@@ -29,7 +32,7 @@ struct Args{
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, clap::ValueEnum)]
-enum Mode { #[default] Transcribe, Stats }
+enum Mode { #[default] Transcribe, Stats, Language }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, clap::ValueEnum)]
 enum OutputMode { #[default] Stdout, File }
@@ -42,35 +45,54 @@ fn main() {
     }
     let mut log = String::new();
     let mut doc = String::new();
-    let mut stats = Stats::default();
-    let mut fileroot = args.inputfiles[0].clone();
-    for file in args.inputfiles{
-        let contents = match fs::read_to_string(&file){
-            Ok(contents) => contents,
-            Err(error) => {
-                println!("Could not read file: \"{}\".\n\tError: {}", file.display(), error);
-                continue;
+    match args.mode{
+        Mode::Transcribe => {
+            for file in args.inputfiles{
+                let chapter = if let Some(c) = get_chapter(&file) { c } else { continue; };
+                doc.clear();
+                write_transcription(chapter, &mut doc, &mut log);
+                write_output(args.outputmode, &args.outputdir, file, &doc);
             }
-        };
-        let chapter = match toml::from_str::<Chapter>(&contents){
-            Ok(chapter) => chapter,
-            Err(error) => panic!("{} (error position is an estimation!)", error),
-        };
-        if args.mode == Mode::Transcribe{
-            doc.clear();
-            write_transcription(chapter, &mut doc, &mut log);
-            write_output(args.outputmode, &args.outputdir, file, &doc);
-        } else {
-            accumulate_stats(chapter, &mut stats, &mut log);
-        }
-    }
-    if args.mode == Mode::Stats{
-        fileroot.set_file_name("stats");
-        stats_report(stats, &mut doc);
-        write_output(args.outputmode, &args.outputdir, fileroot, &doc);
+        },
+        Mode::Stats => {
+            let mut stats = Stats::default();
+            let mut fileroot = args.inputfiles[0].clone();
+            for file in args.inputfiles{
+                let chapter = if let Some(c) = get_chapter(&file) { c } else { continue; };
+                accumulate_stats(chapter, &mut stats, &mut log);
+            }
+            fileroot.set_file_name("stats");
+            stats_report(stats, &mut doc);
+            write_output(args.outputmode, &args.outputdir, fileroot, &doc);
+        },
+        Mode::Language => {
+            let mut stats = LangStats::default();
+            let mut fileroot = args.inputfiles[0].clone();
+            for file in args.inputfiles{
+                let chapter = if let Some(c) = get_chapter(&file) { c } else { continue; };
+                accumulate_lang_stats(chapter, &mut stats, &mut log);
+            }
+            fileroot.set_file_name("stats");
+            lang_stats_report(stats, &mut doc);
+            write_output(args.outputmode, &args.outputdir, fileroot, &doc);
+        },
     }
     if args.log {
         println!("{}", log);
+    }
+}
+
+fn get_chapter(file: &PathBuf) -> Option<Chapter>{
+    let contents = match fs::read_to_string(&file){
+        Ok(contents) => contents,
+        Err(error) => {
+            println!("Could not read file: \"{}\".\n\tError: {}", file.display(), error);
+            return None;
+        }
+    };
+    match toml::from_str::<Chapter>(&contents){
+        Ok(chapter) => Some(chapter),
+        Err(error) => panic!("{} (error position is an estimation!)", error),
     }
 }
 

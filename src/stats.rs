@@ -1,16 +1,13 @@
 use crate::structure::*;
 use crate::japanese::*;
+use crate::report::*;
 
 use std::fmt::Write;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Default)]
 pub struct Stats{
-    manga: String,
-    volumes: Vec<usize>,
-    chapters: Vec<usize>,
-    pictures: usize,
-    morae: usize,
+    rp: ReportHeader,
     locations: HashMap<String, (usize, usize)>,
     characters: HashMap<String, usize>,
     speaks: HashMap<String, usize>,
@@ -19,30 +16,7 @@ pub struct Stats{
 }
 
 pub fn stats_report(mut s: Stats, doc: &mut String){
-    let _ = writeln!(doc, "Manga: {}", s.manga);
-    let _ = write!(doc, "Volumes: ");
-
-    s.volumes.sort();
-    s.volumes.dedup();
-    for vol in s.volumes{
-        let _ = write!(doc, "{}, ", vol);
-    }
-    doc.pop();
-    doc.pop();
-    let _ = writeln!(doc);
-
-    let _ = write!(doc, "Chapters: ");
-    s.chapters.sort();
-    s.chapters.dedup();
-    for chap in s.chapters{
-        let _ = write!(doc, "{}, ", chap);
-    }
-    doc.pop();
-    doc.pop();
-    let _ = writeln!(doc);
-
-    let _ = writeln!(doc, "Pictures: {}", s.pictures);
-    let _ = writeln!(doc, "Morae spoken: {}", s.morae);
+    write_header(&mut s.rp, doc);
 
     let _ = writeln!(doc, "Locations: ");
     let mut locs = s.locations.into_iter().collect::<Vec<_>>();
@@ -67,24 +41,11 @@ pub fn stats_report(mut s: Stats, doc: &mut String){
 }
 
 pub fn accumulate_stats(chapter: Chapter, stats: &mut Stats, log: &mut String){
-    fn update<T: Copy>(map: &mut HashMap<String, T>, key: &str, val: T, fun: fn(T, T) -> T){
-        if let Some(x) = map.get_mut(key){
-            *x = fun(*x, val);
-        } else {
-            map.insert(key.to_string(), val);
-        }
-    }
-
-    if stats.manga.is_empty(){
-        stats.manga = chapter.manga;
-    } else if stats.manga != chapter.manga{
-        let _ = writeln!(log, "Different manga found: {}. Current manga is: {}.",
-                         chapter.manga, stats.manga);
-    }
-    stats.volumes.push(chapter.volume);
-    stats.chapters.push(chapter.chapter);
+    set_current_manga(&mut stats.rp.manga, chapter.manga, log);
+    stats.rp.volumes.push(chapter.volume);
+    stats.rp.chapters.push(chapter.chapter);
     for picture in chapter.pic{
-        stats.pictures += 1;
+        stats.rp.pictures += 1;
         let location = picture.location.unwrap_or_default();
         let mut pic_morae = 0;
         if let Some(characters) = picture.characters{
@@ -109,7 +70,7 @@ pub fn accumulate_stats(chapter: Chapter, stats: &mut Stats, log: &mut String){
                 }
                 let morae = replacements.iter().flat_map(|line| line.chars())
                     .fold(0, |acc, c| acc + to_mora(c));
-                stats.morae += morae;
+                stats.rp.morae += morae;
                 pic_morae += morae;
                 update(&mut stats.speaks, &text.from, morae, |a, b| a + b);
                 if let Some(receiver) = text.to{
