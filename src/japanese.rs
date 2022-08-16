@@ -1,3 +1,36 @@
+pub fn split_hirakata(string: &str) -> Vec<String>{
+    let mut res = Vec::new();
+    let chars: Vec<char> = string.chars().collect();
+    if chars.is_empty() { return res; }
+    let lm1 = chars.len() - 1;
+    let mut i = 0;
+
+    while i < lm1{
+        let a = chars[i];
+        let b = chars[i + 1];
+        let comb = format!("{}{}", a, b);
+        if let Hepburn::Roman(_) = Hepburn::from(&comb){
+            res.push(comb);
+            i += 1;
+            continue;
+        }
+        let a = a.to_string();
+        match Hepburn::from(&a){
+            Hepburn::Fail => {},
+            _ => res.push(a),
+        }
+        i += 1;
+    }
+    if i == lm1{
+        let last = chars[lm1].to_string();
+        match Hepburn::from(&last){
+            Hepburn::Fail => {},
+            _ => res.push(last),
+        }
+    }
+    res
+}
+
 pub fn romanize(string: &str) -> String{
     let mut res = String::new();
     let chars: Vec<char> = string.chars().collect();

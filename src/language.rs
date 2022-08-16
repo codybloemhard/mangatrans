@@ -48,10 +48,9 @@ pub fn accumulate_lang_stats(chapter: Chapter, stats: &mut LangStats, log: &mut 
                 let morae = replacements.iter().flat_map(|line| line.chars())
                     .fold(0, |acc, c| acc + to_mora(c));
                 for line in text.lines{
-                    for c in line.chars(){
-                        if is_hiragana(c) || is_katakana(c) {
-                            update(&mut stats.other, &c.to_string(), 1, |a, b| a + b);
-                        }
+                    let split = split_hirakata(&line);
+                    for c in split{
+                        update(&mut stats.other, &c.to_string(), 1, |a, b| a + b);
                     }
                 }
                 stats.rp.morae += morae;
