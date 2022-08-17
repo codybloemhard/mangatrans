@@ -221,6 +221,14 @@ mod tests{
             &romanize("いってキーまーす!!"),
             "ittekiimaasu!!"
         );
+        assert_eq!(
+            &romanize("あっ"),
+            "ah"
+        );
+        assert_eq!(
+            &romanize("あっああ"),
+            "aaaa"
+        );
     }
 
     #[test]
@@ -326,5 +334,37 @@ mod tests{
         }
         assert_eq!(morae("きょう"), 2);
         assert_eq!(morae("  いってキーまーす！"), 8);
+    }
+
+    #[test]
+    fn split_hirakata_test(){
+        let res = split_hirakata("きょう||  いってキーまーす！||つくって ください");
+        assert_eq!(&res[0], "きょ");
+        assert_eq!(&res[1], "う");
+        assert_eq!(&res[2], "い");
+        assert_eq!(&res[3], "っ");
+        assert_eq!(&res[4], "て");
+        assert_eq!(&res[5], "キ");
+        assert_eq!(&res[6], "ー");
+        assert_eq!(&res[7], "ま");
+        assert_eq!(&res[8], "ー");
+        assert_eq!(&res[9], "す");
+        assert_eq!(&res[10], "！");
+        assert_eq!(&res[11], "つ");
+        assert_eq!(&res[12], "く");
+        assert_eq!(&res[13], "っ");
+        assert_eq!(&res[14], "て");
+        assert_eq!(&res[15], "く");
+        assert_eq!(&res[16], "だ");
+        assert_eq!(&res[17], "さ");
+        assert_eq!(&res[18], "い");
+    }
+
+    #[test]
+    fn could_contain_kanji_test(){
+        let a = ["不幸中の幸いって".to_string()];
+        let b = ["そうかんがえると".to_string()];
+        assert_eq!(could_contain_kanji(&a), true);
+        assert_eq!(could_contain_kanji(&b), false);
     }
 }
