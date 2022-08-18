@@ -37,7 +37,7 @@ pub fn stats_report(mut s: Stats, doc: &mut String){
     write_list(s.characters, "Character appearances: ");
     write_list(s.speaks, "Morae spoken: ");
     write_list(s.spoken_to, "Morae spoken to: ");
-    write_list(s.conversation_pair, "Conversation pairs in Morae: ");
+    write_list(s.conversation_pair, "Conversation pairs in morae: ");
 }
 
 pub fn accumulate_stats(chapter: Chapter, stats: &mut Stats, log: &mut String){

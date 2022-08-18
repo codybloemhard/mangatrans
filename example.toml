@@ -29,6 +29,7 @@ characters = ["nano"]
   transl = ["Breakfast is on you.", "Please make it yourself!!"]
   [[pic.text]]
   from = "naration"
+  to = "audience"
   lines = ["東雲 なの", "ロボ 女子 高生"]
   kmap = [
     ["東", "しの"],
