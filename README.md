@@ -142,9 +142,12 @@ I personally regard the audience as a "character" in this field.
 The field is optional. If a character speaks to themselves,
 or thinks internally you can just leave this field out.<br/>
 `lines` is a mandatory field and should be an array of strings,
-each containing a line of transcribed text.<br/>
-This text should be transcribed literally from the manga,
-and is used for many calculations and transformations.<br/>
+each containing a line of transcribed text.
+This text should be transcribed literally from the manga, apart from spaces
+and is used for many calculations and transformations.
+To split of words you can insert ascii spaces `" "` between characters.
+These are removed in the output of the transcription
+but will be used for things such as the romanized version.<br/>
 `kmap` is an optional field that defines a mapping of kanji to hiragana or katakana.
 This is used for the substitution.<br/>
 `transl` is for translation of `lines`.
@@ -196,7 +199,9 @@ OPTIONS:
 
 ## Sample output
 
-Partial sample output of the transcription mode:
+Sample output generated from chapter 1 of the manga 日常.
+
+### Partial sample output of the transcription mode
 
 - picture 65
   - text 1
@@ -215,7 +220,7 @@ Partial sample output of the transcription mode:
     - chotto yamenayo- <br/> honnin baretenaito <br/> omotterundakara
     - Stop it, she doesn't know we found out yet.
 
-Sample output of the statistics mode:
+### Sample output of the statistics mode
 ```
 Manga: 日常
 Volumes: 1
@@ -276,6 +281,32 @@ Conversation pairs in morae:
     mai, mio: 16
     nakanojo, person: 12
     person, person: 8
+```
+
+### Partial sample output of the language mode
+
+```
+Kanji frequencies:
+    降: ふ: 5
+    生: せい: 4
+    高: こう: 4
+    子: こ: 3
+    麻: ま: 3
+    今日: きょう: 3
+    赤: あか: 3
+    衣: い: 3
+    雲: のめ: 2
+    行: い: 2
+    先: せん: 2
+    下: くだ: 2
+    思: おも: 2
+    日: につ: 2
+    本: ほん: 2
+    直: ちょく: 2
+    人: にん: 2
+    東: しの: 2
+    当: あ: 2
+    原: はら: 2
 ```
 
 ## License
