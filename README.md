@@ -47,7 +47,6 @@ beginning of my transcribing journey.
     - [x] translation
     - [x] kanji map
     - [x] from/to (directed from to which character)
-    - [ ] new page field
 - [x] general
     - [x] report: volumes and chapters included, picture and morae counts
     - [ ] customization with config file
@@ -115,7 +114,11 @@ characters = ["nano"]
         # text data
 ```
 
-Picture number(`nr`) and page number(`page`) it's on are expected to be there.<br/>
+Picture number(`nr`) is expected to be there.<br/>
+`page` is optional and sets the page number.
+If `page` is not present, it is assumed we're still on the same page
+as last time you declared a page number.
+Every chapter must have it's first picture assigned a page number so it's knows how to continue.<br/>
 `location`, `characters` and array of texts are optional.<br/>
 An example of text data:
 

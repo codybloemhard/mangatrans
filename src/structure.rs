@@ -14,7 +14,7 @@ pub struct Chapter{
 #[derive(Deserialize, Debug)]
 pub struct Pic{
     pub nr: usize,
-    pub page: usize,
+    pub page: Option<usize>,
     pub characters: Option<Vec<String>>,
     pub location: Option<String>,
     pub text: Option<Vec<Text>>,

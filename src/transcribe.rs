@@ -14,6 +14,7 @@ pub fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
     }
 
     let mut last_page = 0;
+
     for picture in chapter.pic{
         fn write_text(md: &mut String, log: &mut String, ident: usize, text: &Text){
             fn write_lines(md: &mut String, lines: &[String], reps: &[(&str, &str)]) {
@@ -70,9 +71,10 @@ pub fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
 
         let text = if let Some(text) = picture.text{ text } else { continue; };
 
-        if picture.page > last_page{
-            let _ = writeln!(md, "{}Page: {}", header(5), picture.page);
-            last_page = picture.page;
+        let page = picture.page.unwrap_or(0);
+        if page > last_page{
+            let _ = writeln!(md, "{}Page: {}", header(5), page);
+            last_page = page;
         }
         let _ = writeln!(md, "{}picture {}", bullet(0), picture.nr);
 

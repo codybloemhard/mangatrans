@@ -45,10 +45,23 @@ fn main() {
     }
     let mut log = String::new();
     let mut doc = String::new();
+
+    let mut fileroot = args.inputfiles[0].clone();
+    let mut chapters = args.inputfiles.into_iter()
+        .map(|f| (get_chapter(&f), f))
+        .filter(|(c, _)| c.is_some())
+        .map(|(c, f)| (c.unwrap(), f))
+        .collect::<Vec<_>>();
+    chapters.sort_by(|a, b|
+        a.0.volume.cmp(&b.0.volume)
+        .then(a.0.chapter.cmp(&b.0.chapter))
+        .then(a.0.subchapter.unwrap_or(0.0)
+              .partial_cmp(&b.0.subchapter.unwrap_or(0.0)).unwrap())
+    );
+
     match args.mode{
         Mode::Transcribe => {
-            for file in args.inputfiles{
-                let chapter = if let Some(c) = get_chapter(&file) { c } else { continue; };
+            for (chapter, file) in chapters{
                 doc.clear();
                 write_transcription(chapter, &mut doc, &mut log);
                 write_output(args.outputmode, &args.outputdir, file, &doc);
@@ -56,9 +69,7 @@ fn main() {
         },
         Mode::Stats => {
             let mut stats = Stats::default();
-            let mut fileroot = args.inputfiles[0].clone();
-            for file in args.inputfiles{
-                let chapter = if let Some(c) = get_chapter(&file) { c } else { continue; };
+            for (chapter, _) in chapters{
                 accumulate_stats(chapter, &mut stats, &mut log);
             }
             fileroot.set_file_name("stats");
@@ -67,9 +78,7 @@ fn main() {
         },
         Mode::Language => {
             let mut stats = LangStats::default();
-            let mut fileroot = args.inputfiles[0].clone();
-            for file in args.inputfiles{
-                let chapter = if let Some(c) = get_chapter(&file) { c } else { continue; };
+            for (chapter, _) in chapters{
                 accumulate_lang_stats(chapter, &mut stats, &mut log);
             }
             fileroot.set_file_name("stats");
