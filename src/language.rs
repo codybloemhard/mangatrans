@@ -15,8 +15,8 @@ pub struct LangStats{
 pub fn lang_stats_report(mut s: LangStats, doc: &mut String){
     write_header(&mut s.rp, doc);
 
-    write_list(s.other, "Hiragana/Katakana frequencies:", doc);
-    write_list(s.kanji, "Kanji frequencies:", doc);
+    write_list(&s.other, "Hiragana/Katakana frequencies:", "", doc);
+    write_list(&s.kanji, "Kanji frequencies:", "", doc);
 }
 
 pub fn accumulate_lang_stats(chapter: Chapter, stats: &mut LangStats, log: &mut String){
@@ -31,7 +31,7 @@ pub fn accumulate_lang_stats(chapter: Chapter, stats: &mut LangStats, log: &mut 
                 let replacements = if let Some(kmap) = &text.kmap{
                     for [kanji, mapping] in kmap{
                         let key = format!("{}: {}", kanji, mapping);
-                        update(&mut stats.kanji, &key, 1, |a, b| a + b);
+                        update(&mut stats.kanji, &key, |x| x + 1);
                     }
                     map_kanjis(&text.lines, kmap.as_slice())
                 } else {
@@ -50,7 +50,7 @@ pub fn accumulate_lang_stats(chapter: Chapter, stats: &mut LangStats, log: &mut 
                 for line in text.lines{
                     let split = split_hirakata(&line);
                     for c in split{
-                        update(&mut stats.other, &c.to_string(), 1, |a, b| a + b);
+                        update(&mut stats.other, &c.to_string(), |x| x + 1);
                     }
                 }
                 stats.rp.morae += morae;

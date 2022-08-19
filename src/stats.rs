@@ -13,6 +13,7 @@ pub struct Stats{
     speaks: HashMap<String, usize>,
     spoken_to: HashMap<String, usize>,
     conversation_pair: HashMap<String, usize>,
+    conversation_prominence: HashMap<String, usize>
 }
 
 pub fn stats_report(mut s: Stats, doc: &mut String){
@@ -25,19 +26,22 @@ pub fn stats_report(mut s: Stats, doc: &mut String){
         let _ = writeln!(doc, "\t{}: {} appearances, {} morae spoken in.", name, count, morae);
     }
 
-    let mut write_list = |hmap: HashMap<String, usize>, title: &str|{
-        let _ = writeln!(doc, "{}", title);
-        let mut list = hmap.into_iter().collect::<Vec<_>>();
-        list.sort_unstable_by(|(_, a), (_, b)| b.partial_cmp(a).unwrap());
-        for (name, count) in list{
-            let _ = writeln!(doc, "\t{}: {}", name, count);
-        }
-    };
+    let total_appearances = write_list(&s.characters, "Character appearances:", "", doc) as f64;
+    write_list(&s.speaks, "Morae spoken:", "", doc);
+    write_list(&s.spoken_to, "Morae spoken to:", "", doc);
+    write_list(&s.conversation_pair, "Conversation pairs in morae:", "", doc);
 
-    write_list(s.characters, "Character appearances: ");
-    write_list(s.speaks, "Morae spoken: ");
-    write_list(s.spoken_to, "Morae spoken to: ");
-    write_list(s.conversation_pair, "Conversation pairs in morae: ");
+    let total_prom: usize = s.conversation_prominence.iter().map(|(_, c)| c).sum();
+    let mut prom = s.conversation_prominence.into_iter()
+        .map(|(s, c)| (s, c as f64 / total_prom as f64))
+        .collect::<HashMap<_, f64>>();
+
+    for (character, count) in &s.characters{
+        let val = *count as f64 / total_appearances;
+        update(&mut prom, character, |x| (x + val));
+    }
+    prom.iter_mut().for_each(|(_, c)| *c *= 50.0);
+    write_list(&prom, "Character prominence:", "%", doc);
 }
 
 pub fn accumulate_stats(chapter: Chapter, stats: &mut Stats, log: &mut String){
@@ -50,7 +54,7 @@ pub fn accumulate_stats(chapter: Chapter, stats: &mut Stats, log: &mut String){
         let mut pic_morae = 0;
         if let Some(characters) = picture.characters{
             for character in characters{
-                update(&mut stats.characters, &character, 1, |a, b| a + b);
+                update(&mut stats.characters, &character, |x| x + 1);
             }
         }
         if let Some(texts) = picture.text{
@@ -72,19 +76,21 @@ pub fn accumulate_stats(chapter: Chapter, stats: &mut Stats, log: &mut String){
                     .fold(0, |acc, c| acc + to_mora(c));
                 stats.rp.morae += morae;
                 pic_morae += morae;
-                update(&mut stats.speaks, &text.from, morae, |a, b| a + b);
+                update(&mut stats.speaks, &text.from, |x| x + morae);
+                update(&mut stats.conversation_prominence, &text.from, |x| x + morae);
                 if let Some(receiver) = text.to{
                     let pair = if text.from.cmp(&receiver) == std::cmp::Ordering::Less{
                         format!("{}, {}", text.from, receiver)
                     } else {
                         format!("{}, {}", receiver, text.from)
                     };
-                    update(&mut stats.spoken_to, &receiver, morae, |a, b| a + b);
-                    update(&mut stats.conversation_pair, &pair, morae, |a, b| a + b);
+                    update(&mut stats.spoken_to, &receiver, |x| x + morae);
+                    update(&mut stats.conversation_pair, &pair, |x| x + morae);
+                    update(&mut stats.conversation_prominence, &receiver, |x| x + morae);
                 }
             }
         };
-        update(&mut stats.locations, &location, (1, pic_morae), |(a, b), (c, d)| (a + c, b + d));
+        update(&mut stats.locations, &location, |(a, b)| (a + 1, b + pic_morae));
     }
 }
 

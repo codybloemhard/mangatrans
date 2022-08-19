@@ -37,21 +37,27 @@ pub fn write_header(h: &mut ReportHeader, doc: &mut String){
     let _ = writeln!(doc, "Morae spoken: {}", h.morae);
 }
 
-
-pub fn write_list(hmap: HashMap<String, usize>, title: &str, doc: &mut String){
-    let _ = writeln!(doc, "{}", title);
-    let mut list = hmap.into_iter().collect::<Vec<_>>();
+pub fn write_list<'a,T>(col: &'a HashMap<String, T>, title: &str, unit: &str, doc: &mut String) -> T
+    where T: std::fmt::Display + PartialOrd + Copy + std::iter::Sum<&'a T> + 'a
+{
+    let total: T = col.iter().map(|(_, c)| c).sum();
+    let _ = writeln!(doc, "{} (out of {:.2}{})", title, total, unit);
+    let mut list = col.iter().collect::<Vec<_>>();
     list.sort_unstable_by(|(_, a), (_, b)| b.partial_cmp(a).unwrap());
     for (name, count) in list{
-        let _ = writeln!(doc, "\t{}: {}", name, count);
+        let _ = writeln!(doc, "\t{}: {:.2}{}", name, count, unit);
     }
+    total
 }
 
-pub fn update<T: Copy>(map: &mut HashMap<String, T>, key: &str, val: T, fun: fn(T, T) -> T){
+
+pub fn update<T: Copy + Default + Sized, F>(map: &mut HashMap<String, T>, key: &str, fun: F)
+    where F: Fn(T) -> T
+{
     if let Some(x) = map.get_mut(key){
-        *x = fun(*x, val);
+        *x = fun(*x);
     } else {
-        map.insert(key.to_string(), val);
+        map.insert(key.to_string(), fun(T::default()));
     }
 }
 

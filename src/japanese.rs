@@ -364,7 +364,7 @@ mod tests{
     fn could_contain_kanji_test(){
         let a = ["不幸中の幸いって".to_string()];
         let b = ["そうかんがえると".to_string()];
-        assert_eq!(could_contain_kanji(&a), true);
-        assert_eq!(could_contain_kanji(&b), false);
+        assert!(could_contain_kanji(&a));
+        assert!(!could_contain_kanji(&b));
     }
 }
