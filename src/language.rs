@@ -20,9 +20,13 @@ pub fn lang_stats_report(mut s: LangStats, doc: &mut String){
 }
 
 pub fn accumulate_lang_stats(chapter: Chapter, stats: &mut LangStats, log: &mut String){
-    set_current_manga(&mut stats.rp.manga, chapter.manga, log);
+    set_current_manga(&mut stats.rp.manga, chapter.manga.clone(), log);
     stats.rp.volumes.push(chapter.volume);
     stats.rp.chapters.push(chapter.chapter);
+
+    if chapter.pic.is_empty() { return; }
+    chapter_header_log(&chapter, log);
+
     for picture in chapter.pic{
         stats.rp.pictures += 1;
 

@@ -1,3 +1,5 @@
+use crate::Chapter;
+
 use std::fmt::Write;
 use std::collections::HashMap;
 
@@ -66,5 +68,25 @@ pub fn set_current_manga(current: &mut String, mut chapter: String, log: &mut St
         *current = chapter;
     } else if current != &mut chapter{
         let _ = writeln!(log, "Different manga found: {}. Current manga is: {}.", chapter, current);
+    }
+}
+
+pub fn chapter_header_log(chapter: &Chapter, log: &mut String){
+    let warning_header = format!(
+        "Warning: chapter {} of volume {} of manga {}",
+        chapter.chapter, chapter.volume, chapter.manga,
+    );
+    if chapter.pic[0].location.is_none() {
+        let _ = writeln!(
+            log,
+            "{} does not have a location set in it's first picture.",
+            warning_header
+        );
+    }
+    if chapter.pic[0].page.is_none() {
+        let _ = writeln!(
+            log, "{} does not have a page number set in it's first picture.",
+            warning_header
+        );
     }
 }

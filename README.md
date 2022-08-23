@@ -64,7 +64,7 @@ beginning of my transcribing journey.
     - [x] characters ranked on morae spoken
     - [x] characters ranked on morae spoken to by other characters
     - [x] character pairs ranked on number of morae spoken in their interactions
-    - [ ] characters ranked on overall prominence
+    - [x] characters ranked on overall prominence
 - [x] language report
     - [x] hiragana/katakana characters ranked by count
     - [x] kanji's ranked by count
@@ -120,6 +120,7 @@ If `page` is not present, it is assumed we're still on the same page
 as last time you declared a page number.
 Every chapter must have it's first picture assigned a page number so it's knows how to continue.<br/>
 `location`, `characters` and array of texts are optional.<br/>
+Every chapter's first page must have an initial location.
 An example of text data:
 
 ```toml

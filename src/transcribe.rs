@@ -1,5 +1,6 @@
 use crate::structure::*;
 use crate::japanese::*;
+use crate::report::chapter_header_log;
 
 use std::fmt::Write;
 
@@ -14,6 +15,9 @@ pub fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
     }
 
     let mut last_page = 0;
+
+    if chapter.pic.is_empty() { return; }
+    chapter_header_log(&chapter, log);
 
     for picture in chapter.pic{
         fn write_text(md: &mut String, log: &mut String, ident: usize, text: &Text){

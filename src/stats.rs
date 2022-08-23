@@ -45,12 +45,18 @@ pub fn stats_report(mut s: Stats, doc: &mut String){
 }
 
 pub fn accumulate_stats(chapter: Chapter, stats: &mut Stats, log: &mut String){
-    set_current_manga(&mut stats.rp.manga, chapter.manga, log);
+    set_current_manga(&mut stats.rp.manga, chapter.manga.clone(), log);
     stats.rp.volumes.push(chapter.volume);
     stats.rp.chapters.push(chapter.chapter);
+
+    if chapter.pic.is_empty() { return; }
+    chapter_header_log(&chapter, log);
+
+    let mut last_location = String::from("");
+
     for picture in chapter.pic{
         stats.rp.pictures += 1;
-        let location = picture.location.unwrap_or_default();
+        let location = picture.location.unwrap_or(last_location);
         let mut pic_morae = 0;
         if let Some(characters) = picture.characters{
             for character in characters{
@@ -91,6 +97,7 @@ pub fn accumulate_stats(chapter: Chapter, stats: &mut Stats, log: &mut String){
             }
         };
         update(&mut stats.locations, &location, |(a, b)| (a + 1, b + pic_morae));
+        last_location = location;
     }
 }
 
