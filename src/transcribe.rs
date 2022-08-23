@@ -14,7 +14,9 @@ pub fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
         let _ = writeln!(md, "Sub Chapter: {}", subchap);
     }
 
-    let mut last_page = 0;
+    let mut page = 0;
+    let mut pic_nr = 1;
+    let mut last_written_page = 0;
 
     if chapter.pic.is_empty() { return; }
     chapter_header_log(&chapter, log);
@@ -73,14 +75,16 @@ pub fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
             }
         }
 
+        pic_nr = picture.nr.unwrap_or(pic_nr + 1);
+        page = picture.page.unwrap_or(page);
+
         let text = if let Some(text) = picture.text{ text } else { continue; };
 
-        let page = picture.page.unwrap_or(0);
-        if page > last_page{
+        if page > last_written_page{
+            last_written_page = page;
             let _ = writeln!(md, "{}Page: {}", header(5), page);
-            last_page = page;
         }
-        let _ = writeln!(md, "{}picture {}", bullet(0), picture.nr);
+        let _ = writeln!(md, "{}picture {}", bullet(0), pic_nr);
 
         if text.len() == 1{
             write_text(md, log, 1, &text[0]);
