@@ -14,6 +14,10 @@ pub fn split_hirakata(string: &str) -> Vec<String>{
             i += 1;
             continue;
         }
+        if is_punctuation(a) {
+            i += 1;
+            continue;
+        }
         let a = a.to_string();
         match Hepburn::from(&a){
             Hepburn::Fail => {},
@@ -21,7 +25,7 @@ pub fn split_hirakata(string: &str) -> Vec<String>{
         }
         i += 1;
     }
-    if i == lm1{
+    if i == lm1 && !is_punctuation(chars[lm1]){
         let last = chars[lm1].to_string();
         match Hepburn::from(&last){
             Hepburn::Fail => {},
@@ -181,7 +185,7 @@ pub fn could_be_kanji(c: char) -> bool{
 }
 
 pub fn is_latin(c: char) -> bool{
-    "qgmlwyfubdstnriaeohzxcvjkpQGMLWYFUBDSTNRIAEOHZXCVJKP0123456789".contains(c)
+    "qgmlwyfubdstnriaeohzxcvjkpQGMLWYFUBDSTNRIAEOHZXCVJKP0123456789０１２３４５６７８９".contains(c)
 }
 
 pub fn is_hiragana(c: char) -> bool{
@@ -193,7 +197,7 @@ pub fn is_katakana(c: char) -> bool{
 }
 
 pub fn is_punctuation(c: char) -> bool{
-    "-_=+`~,./<>?\\|[]{}!@#$%^&*()〜ー！？・「」、。".contains(c)
+    "\"'-_=+`~,./<>?\\|[]{}!@#$%^&*()〜ー！？・「」、。".contains(c)
 }
 
 pub fn is_whitespace(c: char) -> bool{

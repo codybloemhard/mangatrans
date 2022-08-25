@@ -134,6 +134,8 @@ kmap = [
     ["直", "ちょく"],
 ]
 transl = ["Today", "is my shift!"]
+notes = ["This in an optional note, the transcriber may want to say something about this text."]
+todo = true
 ```
 
 `from` is used to describe which characters says the current text.
@@ -154,6 +156,12 @@ This is used for the substitution.<br/>
 `transl` is for translation of `lines`.
 It's optional and you may have a different number of entries in the `transl` array than you have
 in the `lines` array.<br/>
+`notes` is optional and you may write down notes about this text here.
+`todo` is optional and when it's set so true, it will be logged that this text needs work.
+You may want to set `todo = true` if there is an error, something is incomplete etc.
+This way it will be logged every time so you won't forget it after a while and you know what items
+need some work.
+Setting `todo = false` doesn't do anything, it's the same as leaving `todo` out.
 
 When a kanji appears multiple times in a text, you must give the correct mapping as many
 times as it appears.

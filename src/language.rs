@@ -32,6 +32,7 @@ pub fn accumulate_lang_stats(chapter: Chapter, stats: &mut LangStats, log: &mut 
 
         if let Some(texts) = picture.text{
             for text in texts{
+                log_todo(&text, log);
                 let replacements = if let Some(kmap) = &text.kmap{
                     for [kanji, mapping] in kmap{
                         let key = format!("{}: {}", kanji, mapping);

@@ -24,8 +24,10 @@ pub struct Pic{
 pub struct Text{
     pub from: String,
     pub to: Option<String>,
+    pub todo: Option<bool>,
     pub lines: Vec<String>,
     pub kmap: Option<Vec<[String; 2]>>,
     pub transl: Option<Vec<String>>,
+    pub notes: Option<Vec<String>>,
 }
 

@@ -1,4 +1,4 @@
-use crate::Chapter;
+use crate::structure::*;
 
 use std::fmt::Write;
 use std::collections::HashMap;
@@ -87,6 +87,16 @@ pub fn chapter_header_log(chapter: &Chapter, log: &mut String){
         let _ = writeln!(
             log, "{} does not have a page number set in it's first picture.",
             warning_header
+        );
+    }
+}
+
+pub fn log_todo(text: &Text, log: &mut String){
+    if let Some(true) = text.todo{
+        let _ = writeln!(
+            log,
+            "Text is marked as \"todo\" with the lines:\n{:#?}",
+            text.lines
         );
     }
 }

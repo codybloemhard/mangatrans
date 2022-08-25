@@ -1,6 +1,6 @@
 use crate::structure::*;
 use crate::japanese::*;
-use crate::report::chapter_header_log;
+use crate::report::*;
 
 use std::fmt::Write;
 
@@ -33,6 +33,7 @@ pub fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
                 }
                 for _ in 0..7 { md.pop(); }
             }
+            log_todo(text, log);
             // transcription
             let _ = write!(md, "{}", bullet(ident + 1));
             write_lines(md, &text.lines, &[
@@ -71,6 +72,12 @@ pub fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
             if let Some(transl) = &text.transl{
                 let _ = write!(md, "{}", bullet(ident + 1));
                 write_lines(md, transl, &[]);
+                let _ = writeln!(md);
+            }
+            // notes
+            if let Some(notes) = &text.notes{
+                let _ = write!(md, "{}", bullet(ident + 1));
+                write_lines(md, notes, &[]);
                 let _ = writeln!(md);
             }
         }

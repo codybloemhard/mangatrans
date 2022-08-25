@@ -65,6 +65,7 @@ pub fn accumulate_stats(chapter: Chapter, stats: &mut Stats, log: &mut String){
         }
         if let Some(texts) = picture.text{
             for text in texts{
+                log_todo(&text, log);
                 let replacements = if let Some(kmap) = &text.kmap{
                     map_kanjis(&text.lines, kmap.as_slice())
                 } else {
