@@ -21,9 +21,13 @@ pub struct Pic{
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(untagged)]
+pub enum Either<T, U>{ This(T), That(U) }
+
+#[derive(Deserialize, Debug)]
 pub struct Text{
-    pub from: String,
-    pub to: Option<String>,
+    pub from: Either<String, Vec<String>>,
+    pub to: Option<Either<String, Vec<String>>>,
     pub todo: Option<bool>,
     pub lines: Vec<String>,
     pub kmap: Option<Vec<[String; 2]>>,

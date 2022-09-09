@@ -197,7 +197,7 @@ pub fn is_katakana(c: char) -> bool{
 }
 
 pub fn is_punctuation(c: char) -> bool{
-    "\"'-_=+`~,./<>?\\|[]{}!@#$%^&*()〜ー！？・「」、。".contains(c)
+    "\"'-_=+`~,./<>?\\|[]{}!@#$%^&*()〜ー！？・「」、，。".contains(c)
 }
 
 pub fn is_whitespace(c: char) -> bool{

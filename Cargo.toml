@@ -12,3 +12,4 @@ description = "Manga transcription data format and ways to render them into read
 toml = "0.5.9"
 serde = { version = "1.0.142", features = ["derive"]}
 clap = { version = "3.2.16", features = ["derive"] }
+either = { version = "1.8.0", features = ["serde"] }

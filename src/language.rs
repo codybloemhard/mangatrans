@@ -45,8 +45,8 @@ pub fn accumulate_lang_stats(chapter: Chapter, stats: &mut LangStats, log: &mut 
                 if could_contain_kanji(&replacements){
                     let _ = writeln!(
                         log,
-                        "Warning: lines {:#?} contain kanji or untranslateable characters.
-                        Every kanji is counted as one (1) mora.",
+                        concat!("Warning: lines {:#?} contain kanji or untranslateable characters.",
+                        "\nEvery kanji is counted as one (1) mora."),
                         replacements
                     );
                 }
