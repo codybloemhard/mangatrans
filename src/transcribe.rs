@@ -22,7 +22,7 @@ pub fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
     chapter_header_log(&chapter, log);
 
     for picture in chapter.pic{
-        fn write_text(md: &mut String, log: &mut String, ident: usize, text: &Text){
+        fn write_text(md: &mut String, log: &mut String, ident: usize, text: Text){
             fn write_lines(md: &mut String, lines: &[String], reps: &[(&str, &str)]) {
                 for line in lines{
                     let mut newline = line.clone();
@@ -33,22 +33,23 @@ pub fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
                 }
                 for _ in 0..7 { md.pop(); }
             }
-            log_todo(text, log);
+            log_todo(&text, log);
+            let lines = text.lines.vectorize();
             // transcription
             let _ = write!(md, "{}", bullet(ident + 1));
-            write_lines(md, &text.lines, &[
+            write_lines(md, &lines, &[
                 (" ", ""), ("-", "ー"), ("~", "〜"), ("!", "！"), ("?", "？")
             ]);
             let _ = writeln!(md);
             // kanji replacement
-            let replacements = if let Some(kmap) = &text.kmap{
-                let rs = map_kanjis(&text.lines, kmap.as_slice());
+            let replacements = if let Some(kmap) = text.kmap{
+                let rs = map_kanjis(&lines, kmap.vectorize().as_slice());
                 let _ = write!(md, "{}", bullet(ident + 1));
                 write_lines(md, &rs, &[(" ", "")]);
                 let _ = writeln!(md);
                 rs
             } else {
-                text.lines.clone()
+                lines.clone()
             };
             // romanize
             if could_contain_kanji(&replacements){
@@ -69,15 +70,15 @@ pub fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
                 let _ = writeln!(md);
             }
             // translation
-            if let Some(transl) = &text.transl{
+            if let Some(transl) = text.transl{
                 let _ = write!(md, "{}", bullet(ident + 1));
-                write_lines(md, transl, &[]);
+                write_lines(md, &transl.vectorize(), &[]);
                 let _ = writeln!(md);
             }
             // notes
-            if let Some(notes) = &text.notes{
+            if let Some(notes) = text.notes{
                 let _ = write!(md, "{}", bullet(ident + 1));
-                write_lines(md, notes, &[]);
+                write_lines(md, &notes.vectorize(), &[]);
                 let _ = writeln!(md);
             }
         }
@@ -93,13 +94,13 @@ pub fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
         }
         let _ = writeln!(md, "{}picture {}", bullet(0), pic_nr);
 
-        if text.len() == 1{
-            write_text(md, log, 1, &text[0]);
-        } else {
-            for (n, text) in text.iter().enumerate(){
+        let multiple = text.len() > 1;
+        let ident = if multiple { 1 } else { 0 };
+        for (n, text) in text.into_iter().enumerate(){
+            if multiple{
                 let _ = writeln!(md, "{}text {}", bullet(1), n + 1);
-                write_text(md, log, 1, text);
             }
+            write_text(md, log, ident, text);
         }
     }
 }

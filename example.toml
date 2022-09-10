@@ -8,12 +8,12 @@ title = "日常の1"
 nr = 2
 page = 1
 location = "shinonome house"
-characters = ["nano"]
+characters = "nano"
   [[pic.text]]
   from = "nano"
   to = "hakase"
   lines = ["すいません", "はかせ"]
-  transl = ["Sorry, hakase"]
+  transl = "Sorry, hakase"
   [[pic.text]]
   from = "nano"
   to = "hakase"

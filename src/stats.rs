@@ -1,4 +1,4 @@
-use crate::structure::{ *, Either::* };
+use crate::structure::*;
 use crate::japanese::*;
 use crate::report::*;
 
@@ -58,18 +58,17 @@ pub fn accumulate_stats(chapter: Chapter, stats: &mut Stats, log: &mut String){
         stats.rp.pictures += 1;
         let location = picture.location.unwrap_or(last_location);
         let mut pic_morae = 0;
-        if let Some(characters) = picture.characters{
-            for character in characters{
-                update(&mut stats.characters, &character, |x| x + 1);
-            }
+        for character in picture.characters.vectorize(){
+            update(&mut stats.characters, &character, |x| x + 1);
         }
         if let Some(texts) = picture.text{
             for text in texts{
                 log_todo(&text, log);
-                let replacements = if let Some(kmap) = &text.kmap{
-                    map_kanjis(&text.lines, kmap.as_slice())
+                let lines = text.lines.vectorize();
+                let replacements = if let Some(kmap) = text.kmap{
+                    map_kanjis(&lines, kmap.vectorize().as_slice())
                 } else {
-                    text.lines.clone()
+                    lines.clone()
                 };
                 if could_contain_kanji(&replacements){
                     let _ = writeln!(
@@ -84,16 +83,9 @@ pub fn accumulate_stats(chapter: Chapter, stats: &mut Stats, log: &mut String){
                 stats.rp.morae += morae;
                 pic_morae += morae;
 
-                let froms = match text.from{
-                    This(f) => vec![f],
-                    That(f) => f,
-                };
+                let froms = text.from.vectorize();
                 let froms = froms.iter();
-                let tos = match text.to{
-                    Some(This(t)) => vec![t],
-                    Some(That(t)) => t,
-                    None => vec![],
-                };
+                let tos = text.to.vectorize();
                 let tos = tos.iter();
 
                 froms.clone().for_each(|f| update(&mut stats.speaks, f, |x| x + morae));

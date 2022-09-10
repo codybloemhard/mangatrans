@@ -33,14 +33,16 @@ pub fn accumulate_lang_stats(chapter: Chapter, stats: &mut LangStats, log: &mut 
         if let Some(texts) = picture.text{
             for text in texts{
                 log_todo(&text, log);
-                let replacements = if let Some(kmap) = &text.kmap{
-                    for [kanji, mapping] in kmap{
+                let lines = text.lines.vectorize();
+                let replacements = if let Some(kmap) = text.kmap{
+                    let kmap = kmap.vectorize();
+                    for [kanji, mapping] in &kmap{
                         let key = format!("{}: {}", kanji, mapping);
                         update(&mut stats.kanji, &key, |x| x + 1);
                     }
-                    map_kanjis(&text.lines, kmap.as_slice())
+                    map_kanjis(&lines, kmap.as_slice())
                 } else {
-                    text.lines.clone()
+                    lines.clone()
                 };
                 if could_contain_kanji(&replacements){
                     let _ = writeln!(
@@ -52,7 +54,7 @@ pub fn accumulate_lang_stats(chapter: Chapter, stats: &mut LangStats, log: &mut 
                 }
                 let morae = replacements.iter().flat_map(|line| line.chars())
                     .fold(0, |acc, c| acc + to_mora(c));
-                for line in text.lines{
+                for line in lines{
                     let split = split_hirakata(&line);
                     for c in split{
                         update(&mut stats.other, &c.to_string(), |x| x + 1);

@@ -47,6 +47,7 @@ beginning of my transcribing journey.
     - [x] translation
     - [x] kanji map
     - [x] from/to (directed from to which character)
+    - [x] One or more pattern
 - [x] general
     - [x] report: volumes and chapters included, picture and morae counts
     - [ ] customization with config file
@@ -182,8 +183,25 @@ kmap = [
 transl = ["If you think about it that way it's a blessing in disguise."]
 ```
 
+### One Or More pattern
+
+The 'One Or More' pattern has been implemented with backwards compatibility.
+This means that in fields that can take multiple values with arrays,
+you can now also leave out the array if you just have one value.
+For example, when denoting which characters appear in a picture you could write
+`characters = ["yukko", "mai"]`. For a single character you can write `characters = ["nano"]`.
+With the 'One Or More' pattern you can write the former as `characters = "nano"`.
+Fields that support the pattern are: `characters`, `form`, `to`, `lines`, `kmap`, `transl`
+and `notes`.
+
+### Example
+
 For an example check out `example.toml`.
 For more information on the toml language visit [https://toml.io/en/](https://toml.io/en/)
+
+All example material such as example lines and characters in `example.toml` and this readme are
+from the manga `日常` by `あらゐけいいち`.
+The material is used for educational purposes.
 
 ## Usage
 
