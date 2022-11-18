@@ -1,9 +1,9 @@
 [package]
 name = "mangatrans"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 license = "GPL-3.0-or-later"
-repository = "https://github.com/codybloemhard/mangatrans"
+repository = "https://gitlab.com/codybloemhard/mangatrans"
 description = "Manga transcription data format and ways to render them into readable formats, statistics and more."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
