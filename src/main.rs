@@ -92,7 +92,7 @@ fn main() {
 }
 
 fn get_chapter(file: &PathBuf) -> Option<Chapter>{
-    let contents = match fs::read_to_string(&file){
+    let contents = match fs::read_to_string(file){
         Ok(contents) => contents,
         Err(error) => {
             println!("Could not read file: \"{}\".\n\tError: {}", file.display(), error);

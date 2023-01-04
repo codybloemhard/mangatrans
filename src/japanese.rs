@@ -48,7 +48,11 @@ pub fn romanize(string: &str) -> String{
         if *tsu{
             let next = roman.chars().next();
             if let Some(next) = next{
-                res.push_str(&next.to_string());
+                if roman == &*prev.to_string(){
+                    res.push('h');
+                } else {
+                    res.push_str(&next.to_string());
+                }
             }
             *tsu = false;
         }
@@ -59,6 +63,13 @@ pub fn romanize(string: &str) -> String{
     while i < lm1{
         let a = chars[i];
         let b = chars[i + 1];
+        if a == ' '{
+            if tsu { res.push('h'); }
+            res.push(' ');
+            tsu = false;
+            i += 1;
+            continue;
+        }
         let comb = format!("{}{}", a, b);
         if let Hepburn::Roman(roman) = Hepburn::from(&comb){
             push(&mut res, &roman, &mut tsu, &mut prev);
@@ -231,7 +242,11 @@ mod tests{
         );
         assert_eq!(
             &romanize("あっああ"),
-            "aaaa"
+            "ahaa"
+        );
+        assert_eq!(
+            &romanize("あっ みなかみ さん？"),
+            "ah minakami san?"
         );
     }
 
@@ -349,19 +364,16 @@ mod tests{
         assert_eq!(&res[3], "っ");
         assert_eq!(&res[4], "て");
         assert_eq!(&res[5], "キ");
-        assert_eq!(&res[6], "ー");
-        assert_eq!(&res[7], "ま");
-        assert_eq!(&res[8], "ー");
-        assert_eq!(&res[9], "す");
-        assert_eq!(&res[10], "！");
-        assert_eq!(&res[11], "つ");
+        assert_eq!(&res[6], "ま");
+        assert_eq!(&res[7], "す");
+        assert_eq!(&res[8], "つ");
+        assert_eq!(&res[9], "く");
+        assert_eq!(&res[10], "っ");
+        assert_eq!(&res[11], "て");
         assert_eq!(&res[12], "く");
-        assert_eq!(&res[13], "っ");
-        assert_eq!(&res[14], "て");
-        assert_eq!(&res[15], "く");
-        assert_eq!(&res[16], "だ");
-        assert_eq!(&res[17], "さ");
-        assert_eq!(&res[18], "い");
+        assert_eq!(&res[13], "だ");
+        assert_eq!(&res[14], "さ");
+        assert_eq!(&res[15], "い");
     }
 
     #[test]

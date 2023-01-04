@@ -95,7 +95,7 @@ pub fn write_transcription(chapter: Chapter, md: &mut String, log: &mut String){
         let _ = writeln!(md, "{}picture {}", bullet(0), pic_nr);
 
         let multiple = text.len() > 1;
-        let ident = if multiple { 1 } else { 0 };
+        let ident = usize::from(multiple);
         for (n, text) in text.into_iter().enumerate(){
             if multiple{
                 let _ = writeln!(md, "{}text {}", bullet(1), n + 1);
