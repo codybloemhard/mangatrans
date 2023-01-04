@@ -37,18 +37,18 @@ pub fn split_hirakata(string: &str) -> Vec<String>{
 
 pub fn romanize(string: &str) -> String{
     let mut res = String::new();
-    let chars: Vec<char> = string.chars().collect();
-    if chars.is_empty() { return res; }
-    let lm1 = chars.len() - 1;
+    if string.chars().next().is_none() { return res; }
+    let chars: Vec<char> = string.chars().chain([' ']).collect();
+    let l = chars.len() - 1;
     let mut i = 0;
     let mut prev = chars[0];
     let mut tsu = false;
 
-    fn push(res: &mut String, roman: &str, tsu: &mut bool, prev: &mut char){
+    fn push(res: &mut String, roman: &str, tsu: &mut bool, prev: &mut char, last: bool){
         if *tsu{
             let next = roman.chars().next();
             if let Some(next) = next{
-                if roman == &*prev.to_string(){
+                if last || roman == &*prev.to_string(){
                     res.push('h');
                 } else {
                     res.push_str(&next.to_string());
@@ -60,41 +60,30 @@ pub fn romanize(string: &str) -> String{
         if let Some(last) = roman.chars().last(){ *prev = last; }
     }
 
-    while i < lm1{
+    while i < l{
         let a = chars[i];
         let b = chars[i + 1];
-        if a == ' '{
+        let last = i == l - 1;
+        if a != 'ー' && (is_whitespace(a) || is_punctuation(a)){
             if tsu { res.push('h'); }
-            res.push(' ');
             tsu = false;
-            i += 1;
-            continue;
         }
         let comb = format!("{}{}", a, b);
         if let Hepburn::Roman(roman) = Hepburn::from(&comb){
-            push(&mut res, &roman, &mut tsu, &mut prev);
+            push(&mut res, &roman, &mut tsu, &mut prev, last);
             i += 2;
             continue;
         }
         let a = a.to_string();
         match Hepburn::from(&a){
-            Hepburn::Roman(roman) => push(&mut res, &roman, &mut tsu, &mut prev),
+            Hepburn::Roman(roman) => push(&mut res, &roman, &mut tsu, &mut prev, last),
             Hepburn::SmallTsu => tsu = true,
             Hepburn::Enlongate => res.push(prev),
             Hepburn::Fail => res.push_str(&a),
         }
         i += 1;
     }
-    if i == lm1{
-        let last = chars[lm1].to_string();
-        if last == "っ"{
-            res.push('h');
-        } else if let Hepburn::Roman(roman) = Hepburn::from(&last){
-            push(&mut res, &roman, &mut tsu, &mut prev);
-        } else {
-            res.push_str(&last);
-        }
-    }
+    if tsu { res.push('h'); }
     res
 }
 
@@ -247,6 +236,14 @@ mod tests{
         assert_eq!(
             &romanize("あっ みなかみ さん？"),
             "ah minakami san?"
+        );
+        assert_eq!(
+            &romanize("えっ？"),
+            "eh?"
+        );
+        assert_eq!(
+            &romanize("チャッ"),
+            "chah"
         );
     }
 
