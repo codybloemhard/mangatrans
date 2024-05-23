@@ -1,15 +1,15 @@
 [package]
 name = "mangatrans"
-version = "1.0.1"
+version = "1.0.2"
 edition = "2021"
 license = "GPL-3.0-or-later"
-repository = "https://gitlab.com/codybloemhard/mangatrans"
+repository = "https://github.com/codybloemhard/mangatrans"
 description = "Manga transcription data format and ways to render them into readable formats, statistics and more."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-toml = "0.5.9"
-serde = { version = "1.0.142", features = ["derive"]}
-clap = { version = "3.2.16", features = ["derive"] }
-either = { version = "1.8.0", features = ["serde"] }
+toml = "0.8.13"
+serde = { version = "1.0.202", features = ["derive"]}
+clap = { version = "4.5.4", features = ["derive"] }
+either = { version = "1.12.0", features = ["serde"] }

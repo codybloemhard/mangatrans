@@ -1,12 +1,15 @@
 # Mangatrans
+
 Manga transcription data format and ways to render them into readable formats, statistics and more.
 
 ## Goals
+
 The goal of this project is to be able to write manga transcriptions as data and not at the final result.
 The program should parse this data and construct various forms of output from this,
 such as readables, language reports and statistics.
 
 ### Transcription
+
 A transcription should have the literal text from the manga in it.
 Along with it, it could contain extra auxiliary information such as the text with the kanjis replaced,
 romanized text and translation or notes.
@@ -15,12 +18,14 @@ The goal of this is to be able to keep it along while reading the manga or be ab
 prevent redoing work such as figuring out the spelling of kanji.
 
 ### Language Report
+
 An extra tool for learning Japanese while reading and transcribing manga.
 Could contain lists such common kanji and their mappings into hiragana.
 The introduction of simple frequency statistics and sorted output may reveal patterns in the language
 used such as the most common words and kanij, useful for learning.
 
 ### Statistics Report
+
 A tool that is of novel interest. Knowing what locations show up most in the manga,
 who speaks most, which characters converse lots which each other and other novelties may be
 interesting to know for fans of the manga.
@@ -31,6 +36,7 @@ That's why you might as well transcribe these things as they don't inflate the e
 give rise to the opportunity to compute insights that are just really fun.
 
 ### Configuration
+
 Transcribing into a data format and not into a format that is to be consumed directly has some
 advantages.
 Configuration may allow different output to be generated from the data.
@@ -41,6 +47,7 @@ This is one of the main goals of the project since I just kept changing my forma
 beginning of my transcribing journey.
 
 ## Feature list
+
 - [x] parse data
     - [x] pictures data: location, characters, nr, page
     - [x] transcription
@@ -248,6 +255,7 @@ Sample output generated from chapter 1 of the manga 日常.
     - Stop it, she doesn't know we found out yet.
 
 ### Sample output of the statistics mode
+
 ```
 Manga: 日常
 Volumes: 1
@@ -337,8 +345,9 @@ Kanji frequencies:
 ```
 
 ## License
+
 ```
-Copyright (C) 2022 Cody Bloemhard
+Copyright (C) 2024 Cody Bloemhard
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

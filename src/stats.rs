@@ -31,7 +31,7 @@ pub fn stats_report(mut s: Stats, doc: &mut String){
     write_list(&s.spoken_to, "Morae spoken to:", "", doc);
     write_list(&s.conversation_pair, "Conversation pairs in morae:", "", doc);
 
-    let total_prom: usize = s.conversation_prominence.iter().map(|(_, c)| c).sum();
+    let total_prom: usize = s.conversation_prominence.values().sum();
     let mut prom = s.conversation_prominence.into_iter()
         .map(|(s, c)| (s, c as f64 / total_prom as f64))
         .collect::<HashMap<_, f64>>();
